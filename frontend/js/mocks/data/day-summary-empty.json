@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-13",
+  "target_calories": 2150,
+  "eaten_calories": 0.0,
+  "remaining_calories": 2150.0,
+  "is_success": false,
+  "streak": { "current": 0, "record": 0 },
+  "meals": {
+    "breakfast": [],
+    "lunch": [],
+    "dinner": [],
+    "snack": []
+  }
+}

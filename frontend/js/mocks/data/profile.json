@@ -1,0 +1,16 @@
+{
+  "email": "demo@example.com",
+  "name": "Демо-пользователь",
+  "gender": "male",
+  "age": 25,
+  "height_cm": 180.0,
+  "weight_kg": 84.5,
+  "activity": "moderate",
+  "goal": "lose",
+  "daily_calories": 2150,
+  "macros": {
+    "protein": 161.2,
+    "fat": 71.6,
+    "carbs": 215.0
+  }
+}
