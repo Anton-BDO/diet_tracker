@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "conflict",
+    "message": "Пользователь с таким email уже существует",
+    "field": "email"
+  }
+}

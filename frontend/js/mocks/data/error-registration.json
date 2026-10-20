@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Рост должен быть от 100 до 250 см",
+    "field": "height_cm"
+  }
+}

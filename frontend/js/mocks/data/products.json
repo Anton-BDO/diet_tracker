@@ -1,0 +1,74 @@
+[
+  {
+    "id": "6521a3b5c9e8d761a2b3c001",
+    "name": "Куриная грудка (сырая)",
+    "protein": 23.6,
+    "fat": 1.9,
+    "carbs": 0.4,
+    "kcal": 113,
+    "owner_id": null
+  },
+  {
+    "id": "6521a3b5c9e8d761a2b3c002",
+    "name": "Овсяные хлопья",
+    "protein": 13,
+    "fat": 7,
+    "carbs": 62,
+    "kcal": 370,
+    "owner_id": null
+  },
+  {
+    "id": "6521a3b5c9e8d761a2b3c003",
+    "name": "Рис отварной",
+    "protein": 2.7,
+    "fat": 0.3,
+    "carbs": 28.2,
+    "kcal": 130,
+    "owner_id": null
+  },
+  {
+    "id": "6521a3b5c9e8d761a2b3c004",
+    "name": "Лосось",
+    "protein": 20,
+    "fat": 13,
+    "carbs": 0,
+    "kcal": 208,
+    "owner_id": null
+  },
+  {
+    "id": "6521a3b5c9e8d761a2b3c005",
+    "name": "Картофель отварной",
+    "protein": 2,
+    "fat": 0.4,
+    "carbs": 17,
+    "kcal": 82,
+    "owner_id": null
+  },
+  {
+    "id": "6521a3b5c9e8d761a2b3c006",
+    "name": "Банан",
+    "protein": 1.1,
+    "fat": 0.3,
+    "carbs": 22.8,
+    "kcal": 89,
+    "owner_id": null
+  },
+  {
+    "id": "6521a3b5c9e8d761a2b3c007",
+    "name": "Творог 5%",
+    "protein": 17,
+    "fat": 5,
+    "carbs": 1.8,
+    "kcal": 121,
+    "owner_id": null
+  },
+  {
+    "id": "6521a3b5c9e8d761a2b3c999",
+    "name": "Протеиновый батончик Банан",
+    "protein": 30,
+    "fat": 10,
+    "carbs": 35,
+    "kcal": 360,
+    "owner_id": "6521a3b5c9e8d761a2b3c4d5"
+  }
+]
