@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from backend.api.auth import authenticate_request
 from backend.api.http_utils import (
     HttpError,
     Request,
@@ -18,9 +19,12 @@ API_PREFIX = "/api"
 logger = logging.getLogger(__name__)
 
 
-def dispatch(router, request):
+def dispatch(router, request, authenticate=authenticate_request):
     """Вызвать обработчик и превратить любые ошибки в ответ."""
     try:
+        request.user_id = None
+        if authenticate is not None:
+            request.user_id = authenticate(request)
         handler, params = router.resolve(request.method, request.path)
         request.params = params
         return handler(request)
@@ -49,7 +53,8 @@ def resolve_static(static_dir, url_path):
     return candidate
 
 
-def make_handler(router, cors_origin, static_dir):
+def make_handler(router, cors_origin, static_dir,
+                 authenticate=authenticate_request):
     """Собрать класс обработчика с нужными зависимостями."""
 
     class Handler(BaseHTTPRequestHandler):
@@ -75,7 +80,7 @@ def make_handler(router, cors_origin, static_dir):
             path = parts.path
             if path == API_PREFIX or path.startswith(API_PREFIX + "/"):
                 request = self._build_request(method, parts)
-                self._send(dispatch(router, request))
+                self._send(dispatch(router, request, authenticate))
             elif method == "GET":
                 self._send_static(path)
             else:
@@ -88,11 +93,19 @@ def make_handler(router, cors_origin, static_dir):
                 length = 0
             body = self.rfile.read(length) if length > 0 else b""
             query = {k: v[0] for k, v in parse_qs(parts.query).items()}
+            headers = dict(self.headers)
+            authorization = self.headers.get_all("Authorization")
+            if authorization:
+                # Сохраняем повторные значения: запятая заставит auth
+                # отклонить неоднозначные credentials вместо выбора одного.
+                headers = {k: v for k, v in headers.items()
+                           if k.lower() != "authorization"}
+                headers["Authorization"] = ",".join(authorization)
             return Request(
                 method=method,
                 path=parts.path,
                 query=query,
-                headers=dict(self.headers),
+                headers=headers,
                 body=body,
             )
 
@@ -130,7 +143,8 @@ def make_handler(router, cors_origin, static_dir):
     return Handler
 
 
-def create_server(router, host, port, cors_origin, static_dir):
+def create_server(router, host, port, cors_origin, static_dir,
+                  authenticate=authenticate_request):
     """Создать многопоточный HTTP-сервер."""
-    handler = make_handler(router, cors_origin, static_dir)
+    handler = make_handler(router, cors_origin, static_dir, authenticate)
     return ThreadingHTTPServer((host, port), handler)

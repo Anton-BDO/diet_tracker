@@ -4,6 +4,7 @@
 """
 import logging
 
+from backend.api.auth import make_authenticator
 from backend.api.handlers.health import make_health_handler
 from backend.api.router import Router
 from backend.api.server import create_server
@@ -24,7 +25,7 @@ def build_router(client):
     return router
 
 
-def build_server(settings, client):
+def build_server(settings, client, *, session_repository=None, clock=None):
     """Подготовить базу и собрать сервер. В тестах client = mongomock."""
     db = get_database(client, settings.db_name)
     ensure_indexes(db)
@@ -35,6 +36,7 @@ def build_server(settings, client):
         settings.port,
         settings.cors_origin,
         settings.static_dir,
+        authenticate=make_authenticator(session_repository, clock),
     )
 
 
