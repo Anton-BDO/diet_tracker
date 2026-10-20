@@ -46,11 +46,36 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [status, db]
                 properties:
                   status:
                     type: string
                     example: ok
-                required: [status]
+                  db:
+                    type: string
+                    example: ok
+                    description: Состояние MongoDB
+              example:
+                status: ok
+                db: ok
+        '503':
+          description: MongoDB недоступна
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, db]
+                properties:
+                  status:
+                    type: string
+                    example: degraded
+                  db:
+                    type: string
+                    example: down
+              example:
+                status: degraded
+                db: down
+
 
   /api/auth/register:
     post:
@@ -225,8 +250,10 @@ paths:
       parameters:
         - name: q
           in: query
-          required: true
-          description: Поисковая подстрока
+          required: false
+          description: |
+            Поисковая подстрока. Пустой или отсутствующий q —
+            весь доступный справочник (глобальные + продукты пользователя).
           schema:
             type: string
             example: кур
@@ -785,13 +812,13 @@ components:
 
     AuthResponse:
       type: object
-      required: [token, user]
+      required: [token, profile]
       properties:
         token:
           type: string
           description: "Токен сессии (Authorization: Bearer <token>)"
           example: "xK9mP2vR..."
-        user:
+        profile:
           $ref: '#/components/schemas/ProfileResponse'
 
     ProfileResponse:
@@ -839,17 +866,13 @@ components:
 
     UpdateProfileRequest:
       type: object
-      description: Любые из полей; при изменении физ. параметров норма пересчитывается
+      description: |
+        Обновляет рост, вес, активность или цель (раздел RESTful API).
+        Хотя бы одно поле обязательно. PATCH веса не создаёт запись в weight_logs.
+        Норма пересчитывается при любом изменении.
+      minProperties: 1
+      additionalProperties: false
       properties:
-        name:
-          type: string
-          minLength: 1
-        sex:
-          type: string
-          enum: [male, female]
-        birth_date:
-          type: string
-          format: date
         height_cm:
           type: number
           format: float
@@ -985,6 +1008,8 @@ components:
 
     UpdateDiaryEntryRequest:
       type: object
+      minProperties: 1
+      additionalProperties: false
       properties:
         grams:
           type: number
