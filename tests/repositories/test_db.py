@@ -28,15 +28,11 @@ def test_indexes_created(db):
     assert "token_1" in db.sessions.index_information()
     assert "name_lower_1" in db.products.index_information()
     assert "owner_id_1" in db.products.index_information()
-    assert "owner_id_1_name_lower_1" in (
+    assert "owner_id_1_name_lower_1" not in (
         db.products.index_information()
     )
-    assert "user_id_1_date_1" in (
-        db.food_entries.index_information()
-    )
-    assert "user_id_1_date_1" in (
-        db.weight_logs.index_information()
-    )
+    assert "user_id_1_date_1" in db.food_entries.index_information()
+    assert "user_id_1_date_1" in db.weight_logs.index_information()
 
 
 def test_unique_indexes_created(db):

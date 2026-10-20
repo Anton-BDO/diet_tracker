@@ -2,18 +2,18 @@
 
 from backend.domain.models import (
     FoodEntry,
-    MacroTargets,
     Product,
     Session,
     User,
     WeightLog,
+    age_on,
 )
 
 __all__ = [
     "FoodEntry",
-    "MacroTargets",
     "Product",
     "Session",
     "User",
     "WeightLog",
+    "age_on",
 ]

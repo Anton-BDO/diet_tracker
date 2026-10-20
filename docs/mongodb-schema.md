@@ -1,168 +1,97 @@
 # Схема MongoDB
 
-## Общая информация
+Схема соответствует `docs/architecture.md`. MongoDB хранит документы с `_id`
+типа ObjectId; в доменных моделях идентификаторы представлены строками,
+преобразование выполняется репозиториями. `created_at` и `updated_at` —
+BSON Date / Python `datetime`. Даты дневника и рождения — строки `YYYY-MM-DD`.
 
-База данных приложения состоит из коллекций:
-
-- `users` — пользователи и их расчётные нормы питания;
-- `products` — общий и пользовательский справочник продуктов;
-- `food_entries` — записи дневника питания;
-- `weight_logs` — история веса;
-- `sessions` — сессии авторизации.
-
-MongoDB не проверяет ссылки между коллекциями как внешние ключи
-реляционной базы данных. Корректность ссылок должны проверять
-репозитории и сервисы приложения.
-
-В MongoDB идентификаторы документов хранятся в `_id` типа ObjectId.
-В доменных моделях идентификаторы представлены строками.
-Преобразование между строкой и ObjectId выполняется на уровне
-репозиториев.
-
-Временные метки `created_at` и `updated_at` хранятся как BSON Date,
-а в Python представлены объектами `datetime`.
-
-Даты дневника и журнала веса хранятся в формате `YYYY-MM-DD`.
-
-## Коллекция users
-
-Назначение: учётные данные, профиль и рассчитанные нормы питания.
-
-Поля:
+## `users`
 
 - `_id`: ObjectId;
-- `email`: str, уникальный email в нижнем регистре;
-- `password_hash`: str, хэш пароля;
+- `email`: str, уникальный, нормализуется в нижний регистр;
+- `password_hash`: str;
 - `name`: str;
-- `gender`: `male` или `female`;
-- `age`: int;
-- `height_cm`: float;
-- `weight_kg`: float;
-- `activity`: `sedentary`, `light`, `moderate`, `high` или `extreme`;
-- `goal`: `lose`, `maintain` или `gain`;
-- `daily_calories`: int;
-- `macros.protein`: float;
-- `macros.fat`: float;
-- `macros.carbs`: float;
-- `created_at`: datetime;
-- `updated_at`: datetime.
+- `sex`: `male` или `female`;
+- `birth_date`: дата рождения `YYYY-MM-DD`; возраст вычисляется, а не хранится;
+- `height_cm`: число, диапазон 100–250;
+- `weight_kg`: число, диапазон 30–300;
+- `activity`: одно из чисел `1.2`, `1.375`, `1.55`, `1.725`, `1.9`;
+- `goal`: `lose`, `keep` или `gain`;
+- `created_at`, `updated_at`: datetime.
 
-Индекс:
+Индекс: уникальный `{email: 1}`.
 
-- уникальный `{email: 1}`.
+Расчётные поля `daily_calories` и `macros` не хранятся. Суточная норма и
+сводки питания вычисляются на лету на основе актуального профиля и дневника.
 
-Пароль хранится только в виде хэша, не в открытом виде.
-
-## Коллекция products
-
-Назначение: общий справочник продуктов и продукты пользователей.
-
-Поля:
+## `products`
 
 - `_id`: ObjectId;
 - `name`: str;
 - `name_lower`: str, нормализованное имя для поиска;
-- `calories`: float, на 100 г;
-- `protein`: float, на 100 г;
-- `fat`: float, на 100 г;
-- `carbs`: float, на 100 г;
-- `is_custom`: bool;
-- `owner_id`: ObjectId или null;
+- `kcal`, `protein`, `fat`, `carbs`: числа на 100 г;
+- `owner_id`: ObjectId или `null`;
 - `created_at`: datetime.
 
-Для системного продукта `is_custom` равен false,
-а `owner_id` равен null.
-
-Для пользовательского продукта `is_custom` равен true,
-а `owner_id` содержит идентификатор пользователя.
+`owner_id: null` означает общий продукт; непустой `owner_id` означает продукт
+пользователя. Отдельного поля `is_custom` нет.
 
 Индексы:
-
 - `{name_lower: 1}`;
-- `{owner_id: 1}`;
-- `{owner_id: 1, name_lower: 1}`.
+- `{owner_id: 1}`.
 
-## Коллекция food_entries
+Составной индекс `{owner_id: 1, name_lower: 1}` не создаётся.
 
-Назначение: записи о съеденных продуктах.
-
-Поля:
+## `food_entries`
 
 - `_id`: ObjectId;
-- `user_id`: ObjectId, ссылка на `users._id`;
-- `product_id`: ObjectId, ссылка на `products._id`;
-- `product_name`: str, название продукта на момент добавления;
-- `grams`: float, масса порции;
-- `calories`: float, калории всей порции;
-- `protein`: float, белки всей порции;
-- `fat`: float, жиры всей порции;
-- `carbs`: float, углеводы всей порции;
+- `user_id`, `product_id`: ObjectId-ссылки;
+- `product_name`: str, снимок названия продукта на момент добавления;
+- `date`: дата в формате `YYYY-MM-DD`;
 - `meal`: `breakfast`, `lunch`, `dinner` или `snack`;
-- `date`: str в формате `YYYY-MM-DD`;
-- `created_at`: datetime;
-- `updated_at`: datetime.
+- `grams`: число, диапазон 1–5000;
+- `kcal`, `protein`, `fat`, `carbs`: числа для всей порции;
+- `created_at`, `updated_at`: datetime.
 
-Индекс:
+Индекс: `{user_id: 1, date: 1}`.
 
-- `{user_id: 1, date: 1}`.
+Название и КБЖУ сохраняются в записи дневника как снимок, чтобы изменения
+справочника продуктов не меняли историю питания.
 
-Название продукта и нутриенты сохраняются в записи дневника,
-чтобы изменение справочника не меняло историю питания задним числом.
-
-## Коллекция weight_logs
-
-Назначение: история измерений веса.
+## `weight_logs`
 
 Поля:
-
 - `_id`: ObjectId;
-- `user_id`: ObjectId, ссылка на `users._id`;
-- `weight_kg`: float;
-- `date`: str в формате `YYYY-MM-DD`;
+- `user_id`: ObjectId-ссылка;
+- `weight_kg`: число, диапазон 30–300;
+- `date`: дата в формате `YYYY-MM-DD`;
 - `created_at`: datetime.
 
-Индекс:
+Уникальный индекс `{user_id: 1, date: 1}` обеспечивает не более одной записи
+веса на пользователя за календарный день.
 
-- уникальный `{user_id: 1, date: 1}`.
-
-Для повторного ввода веса за тот же день репозиторий должен
-обновлять существующий документ через update/upsert.
-
-## Коллекция sessions
-
-Назначение: сессии авторизации.
+## `sessions`
 
 Поля:
-
 - `_id`: ObjectId;
 - `token`: str;
-- `user_id`: ObjectId, ссылка на `users._id`;
+- `user_id`: ObjectId-ссылка;
 - `created_at`: datetime;
 - `expires_at`: datetime.
 
-Индекс:
+`expires_at` сохраняется, чтобы API мог отклонять просроченные сессии.
+Индекс `{token: 1}` уникальный.
 
-- уникальный `{token: 1}`.
+## Связи
 
-## Связи между коллекциями
+- `food_entries.user_id` → `users._id`;
+- `food_entries.product_id` → `products._id`;
+- `weight_logs.user_id` → `users._id`;
+- `products.owner_id` → `users._id` для пользовательских продуктов;
+- `sessions.user_id` → `users._id`.
 
-- `food_entries.user_id` -> `users._id`;
-- `food_entries.product_id` -> `products._id`;
-- `weight_logs.user_id` -> `users._id`;
-- `products.owner_id` -> `users._id` для пользовательских продуктов;
-- `sessions.user_id` -> `users._id`.
+MongoDB не обеспечивает внешние ключи. Ссылки и доступ к данным владельца
+проверяются репозиториями и сервисами.
 
-## Доменные модели
-
-Доменные модели определены в `backend/domain/models.py`:
-
-- `User`;
-- `MacroTargets`;
-- `Product`;
-- `FoodEntry`;
-- `WeightLog`;
-- `Session`.
-
-Они реализованы через Python dataclass и не зависят от PyMongo.
-Проверка ссылок на существующие документы выполняется вне доменных
-моделей — в репозиториях или сервисах.
+Доменная валидация выбрасывает `ValidationError(message, field)`.
+HTTP-слой должен возвращать статус 400 и поле `error.field` для таких ошибок.
