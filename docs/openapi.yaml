@@ -144,11 +144,13 @@ paths:
               password: strongpassword123
       responses:
         '200':
-          description: Успешный вход
+          description: Успешный вход (только токен; профиль — через GET /api/profile)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                token: "xK9mP2vR..."
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -812,6 +814,7 @@ components:
 
     AuthResponse:
       type: object
+      description: Ответ регистрации — токен и профиль
       required: [token, profile]
       properties:
         token:
@@ -820,6 +823,18 @@ components:
           example: "xK9mP2vR..."
         profile:
           $ref: '#/components/schemas/ProfileResponse'
+
+    LoginResponse:
+      type: object
+      description: |
+        Ответ входа — только токен (architecture: «200, токен»).
+        Профиль после входа фронт запрашивает через GET /api/profile.
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: "Токен сессии (Authorization: Bearer <token>)"
+          example: "xK9mP2vR..."
 
     ProfileResponse:
       type: object
