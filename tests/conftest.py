@@ -34,8 +34,11 @@ def run_server(static_dir):
     """Запустить сервер с переданным роутером, вернуть базовый URL."""
     servers = []
 
-    def _run(router):
-        server = create_server(router, "127.0.0.1", 0, "*", str(static_dir))
+    def _run(router, authenticate=None):
+        # Исходные тесты транспорта проверяют HTTP без auth. Тесты
+        # авторизации явно передают настоящий middleware с test repository.
+        server = create_server(router, "127.0.0.1", 0, "*", str(static_dir),
+                               authenticate=authenticate)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         servers.append(server)
         host, port = server.server_address
