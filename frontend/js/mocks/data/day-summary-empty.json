@@ -1,14 +1,23 @@
 {
-  "date": "2026-10-13",
-  "target_calories": 2150,
-  "eaten_calories": 0.0,
-  "remaining_calories": 2150.0,
-  "is_success": false,
-  "streak": { "current": 0, "record": 0 },
-  "meals": {
-    "breakfast": [],
-    "lunch": [],
-    "dinner": [],
-    "snack": []
-  }
+  "date": "2026-10-20",
+  "entries": [],
+  "totals": {
+    "kcal": 0,
+    "protein": 0,
+    "fat": 0,
+    "carbs": 0
+  },
+  "norm": {
+    "kcal": 2437,
+    "protein": 183,
+    "fat": 81,
+    "carbs": 244
+  },
+  "remaining": {
+    "kcal": 2437,
+    "protein": 183,
+    "fat": 81,
+    "carbs": 244
+  },
+  "is_success": false
 }

@@ -1,5 +1,12 @@
 {
-  "status": "success",
-  "entry_id": "6521a3b5c9e8d761a2b3c111",
-  "calculated_calories": 282.5
+  "id": "6521a3b5c9e8d761a2b3c111",
+  "product_id": "6521a3b5c9e8d761a2b3c001",
+  "product_name": "Куриная грудка (сырая)",
+  "date": "2026-10-20",
+  "meal": "lunch",
+  "grams": 250,
+  "kcal": 282.5,
+  "protein": 59,
+  "fat": 4.8,
+  "carbs": 1
 }

@@ -13,8 +13,13 @@ def test_frontend_server_serves_mock_data_without_database(
     code, headers, data = http(f"{base}/js/mocks/data/day-summary.json")
     assert code == 200
     assert "application/json" in headers["Content-Type"]
-    assert data["eaten_calories"] == 2063.0
-    assert data["streak"] == {"current": 4, "record": 7}
+    assert data["totals"]["kcal"] == 2423
+    assert data["norm"]["kcal"] == 2437
+    assert "streak" not in data
+
+    code, headers, data = http(f"{base}/js/mocks/data/streak.json")
+    assert code == 200
+    assert data == {"current": 4, "record": 7}
 
     code, headers, source_text = http(f"{base}/js/mocks/index.js")
     assert code == 200

@@ -7,17 +7,22 @@ const fixtures = Object.freeze({
   "products-empty": "products-empty",
   "product-created": "product-created",
   "entry-created": "food-entry-created",
-  "entry-deleted": "food-entry-deleted",
+  "entry-updated": "food-entry-updated",
   "day-summary": "day-summary",
   "day-empty": "day-summary-empty",
   "day-over-target": "day-summary-over-target",
-  weekly: "analytics-weekly",
-  "weekly-empty": "analytics-empty",
+  streak: "streak",
+  "streak-empty": "streak-empty",
+  "weight-history": "weight-history",
+  "weight-empty": "weight-history-empty",
   "weight-saved": "weight-log-saved",
+  "stats-calories": "stats-calories",
+  "stats-empty": "stats-calories-empty",
   "error-validation": "error-validation",
+  "error-registration": "error-registration",
+  "error-login": "error-login",
   "error-unauthorized": "error-unauthorized",
   "error-conflict": "error-conflict",
-  "error-forbidden": "error-forbidden",
   "error-not-found": "error-not-found",
   "error-server": "error-server",
 });
@@ -26,28 +31,33 @@ const routes = Object.freeze({
   "GET /health": { default: "health" },
   "POST /auth/login": { default: "login" },
   "POST /auth/register": { default: "register" },
-  "GET /user/profile": { default: "profile" },
-  "PUT /user/profile": { default: "profile" },
-  "GET /products/search": {
+  "POST /auth/logout": { default: null },
+  "GET /profile": { default: "profile" },
+  "PATCH /profile": { default: "profile" },
+  "GET /products": {
     default: "products",
     empty: "products-empty",
   },
-  "POST /products/custom": { default: "product-created" },
-  "POST /food/entry": { default: "entry-created" },
-  "DELETE /food/entry": { default: "entry-deleted" },
-  "GET /food/day-summary": {
+  "POST /products": { default: "product-created" },
+  "POST /diary": { default: "entry-created" },
+  "PATCH /diary/{id}": { default: "entry-updated" },
+  "DELETE /diary/{id}": { default: null },
+  "GET /diary": {
     default: "day-summary",
     empty: "day-empty",
     "over-target": "day-over-target",
   },
-  "GET /analytics/weekly": { default: "weekly", empty: "weekly-empty" },
-  "POST /weight/log": { default: "weight-saved" },
+  "GET /weight": { default: "weight-history", empty: "weight-empty" },
+  "POST /weight": { default: "weight-saved" },
+  "GET /streak": { default: "streak", empty: "streak-empty" },
+  "GET /stats/calories": { default: "stats-calories", empty: "stats-empty" },
 });
 
 const errorScenarios = Object.freeze({
   validation: { status: 400, fixture: "error-validation" },
+  "registration-validation": { status: 400, fixture: "error-registration" },
+  "invalid-credentials": { status: 401, fixture: "error-login" },
   unauthorized: { status: 401, fixture: "error-unauthorized" },
-  forbidden: { status: 403, fixture: "error-forbidden" },
   "not-found": { status: 404, fixture: "error-not-found" },
   conflict: { status: 409, fixture: "error-conflict" },
   "server-error": { status: 500, fixture: "error-server" },
@@ -81,7 +91,8 @@ export async function mockRequest(
   path, { method = "GET", scenario = "default" } = {},
 ) {
   const pathname = new URL(path, "https://mock.invalid").pathname;
-  const routePath = pathname.replace(/^\/api(?=\/)/, "");
+  const routePath = pathname.replace(/^\/api(?=\/)/, "")
+    .replace(/^\/diary\/[^/]+$/, "/diary/{id}");
   const routeKey = `${method.toUpperCase()} ${routePath}`;
   if (!Object.hasOwn(routes, routeKey)) {
     throw new Error(`Для маршрута ${routeKey} нет mock-ответа`);
@@ -97,5 +108,6 @@ export async function mockRequest(
   if (!Object.hasOwn(route, scenario)) {
     throw new Error(`Для маршрута ${routeKey} нет сценария ${scenario}`);
   }
-  return loadMock(route[scenario]);
+  const fixture = route[scenario];
+  return fixture === null ? null : loadMock(fixture);
 }
