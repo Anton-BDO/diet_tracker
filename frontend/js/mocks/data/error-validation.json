@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Масса порции должна быть больше нуля",
+    "field": "grams"
+  }
+}
