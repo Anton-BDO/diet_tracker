@@ -3,15 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5f7">
   <title>Трекер диеты</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
   <header class="topbar">
-    <h1>Трекер диеты</h1>
-    <span id="api-status" class="status">Проверяем сервер…</span>
+    <a class="brand" href="#/dashboard" aria-label="Трекер диеты — главная">
+      Трекер диеты
+    </a>
+    <span id="api-status" class="status" role="status">Проверяем сервер…</span>
   </header>
-  <main id="app"></main>
+  <main id="app"><p class="loading-message" role="status">Загрузка…</p></main>
+  <noscript>Для работы дневника нужно включить JavaScript.</noscript>
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>
