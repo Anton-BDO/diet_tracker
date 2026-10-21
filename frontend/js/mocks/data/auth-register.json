@@ -1,0 +1,20 @@
+{
+  "token": "mock-diet-tracker-session",
+  "profile": {
+    "id": "6521a3b5c9e8d761a2b3c4d5",
+    "email": "demo@example.com",
+    "name": "Демо-пользователь",
+    "sex": "male",
+    "birth_date": "2001-01-15",
+    "height_cm": 180,
+    "weight_kg": 84.5,
+    "activity": 1.55,
+    "goal": "lose",
+    "norm": {
+      "kcal": 2437,
+      "protein": 183,
+      "fat": 81,
+      "carbs": 244
+    }
+  }
+}

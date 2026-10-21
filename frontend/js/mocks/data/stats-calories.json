@@ -1,0 +1,40 @@
+{
+  "norm_kcal": 2437,
+  "days": [
+    {
+      "date": "2026-10-14",
+      "kcal": 2300,
+      "is_success": true
+    },
+    {
+      "date": "2026-10-15",
+      "kcal": 2800,
+      "is_success": false
+    },
+    {
+      "date": "2026-10-16",
+      "kcal": 2000,
+      "is_success": false
+    },
+    {
+      "date": "2026-10-17",
+      "kcal": 2300,
+      "is_success": true
+    },
+    {
+      "date": "2026-10-18",
+      "kcal": 2500,
+      "is_success": true
+    },
+    {
+      "date": "2026-10-19",
+      "kcal": 2400,
+      "is_success": true
+    },
+    {
+      "date": "2026-10-20",
+      "kcal": 2423,
+      "is_success": true
+    }
+  ]
+}

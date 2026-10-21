@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-20",
+  "entries": [],
+  "totals": {
+    "kcal": 0,
+    "protein": 0,
+    "fat": 0,
+    "carbs": 0
+  },
+  "norm": {
+    "kcal": 2437,
+    "protein": 183,
+    "fat": 81,
+    "carbs": 244
+  },
+  "remaining": {
+    "kcal": 2437,
+    "protein": 183,
+    "fat": 81,
+    "carbs": 244
+  },
+  "is_success": false
+}

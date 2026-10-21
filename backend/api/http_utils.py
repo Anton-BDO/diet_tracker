@@ -25,6 +25,7 @@ class Request:
     headers: dict = field(default_factory=dict)
     body: bytes = b""
     params: dict = field(default_factory=dict)
+    user_id: Optional[str] = field(default=None, init=False)
 
     def json(self):
         """Тело запроса как словарь."""

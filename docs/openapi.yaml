@@ -1,37 +1,1128 @@
 openapi: 3.0.3
 info:
-  title: Трекер диеты API
-  version: 0.1.0
-  description: >
-    Спецификация ведётся вручную, это контракт между бэкендом и фронтом.
-    Полный список эндпоинтов в документе архитектуры, раздел RESTful API.
+  title: Diet Tracker API
+  description: |
+    RESTful API трекера диеты.
+
+    Источник истины — `docs/architecture.md`. Все запросы, кроме
+    `/api/health`, `/api/auth/register` и `/api/auth/login`, требуют
+    заголовок `Authorization: Bearer <token>`.
+
+    Имена полей совпадают с моделью данных: `sex`, `birth_date`,
+    `activity`, `goal`, `kcal`, `protein`, `fat`, `carbs`.
+    Норма возвращается объектом `norm`.
+  version: 1.0.0
+  contact:
+    name: Architecture
+    url: docs/architecture.md
+
 servers:
   - url: http://localhost:8000
+    description: Local (docker-compose / python -m backend.app)
+  - url: /
+    description: Relative (same origin)
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Profile
+  - name: Products
+  - name: Diary
+  - name: Weight
+  - name: Streak
+  - name: Stats
+
 paths:
   /api/health:
     get:
-      summary: Проверка, что сервер и база живы
+      tags: [Health]
+      summary: Проверка доступности сервера и базы
+      operationId: healthCheck
+      security: []
       responses:
-        "200":
-          description: Всё работает
+        '200':
+          description: Сервис и MongoDB доступны
           content:
             application/json:
               schema:
                 type: object
+                required: [status, db]
                 properties:
-                  status: {type: string, example: ok}
-                  db: {type: string, example: ok}
-        "503":
-          description: База недоступна
+                  status:
+                    type: string
+                    example: ok
+                  db:
+                    type: string
+                    example: ok
+                    description: Состояние MongoDB
+              example:
+                status: ok
+                db: ok
+        '503':
+          description: MongoDB недоступна
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, db]
+                properties:
+                  status:
+                    type: string
+                    example: degraded
+                  db:
+                    type: string
+                    example: down
+              example:
+                status: degraded
+                db: down
+
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация пользователя
+      description: |
+        Создаёт пользователя с профилем и сессию.
+        Возвращает токен и профиль с вычисленной нормой.
+        Дубликат email → 409.
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: user@example.com
+              password: strongpassword123
+              name: Алексей
+              sex: male
+              birth_date: "1996-03-15"
+              height_cm: 180
+              weight_kg: 80
+              activity: 1.55
+              goal: lose
+      responses:
+        '201':
+          description: Пользователь создан, сессия выдана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Email уже занят
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+              example:
+                error:
+                  code: conflict
+                  message: Email already registered
+                  field: email
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход
+      description: |
+        Проверяет email и пароль, создаёт сессию.
+        Неверный email или пароль → 401 без уточнения причины.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: user@example.com
+              password: strongpassword123
+      responses:
+        '200':
+          description: Успешный вход (только токен; профиль — через GET /api/profile)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                token: "xK9mP2vR..."
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выход
+      description: Удаляет текущую сессию.
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Сессия удалена
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/profile:
+    get:
+      tags: [Profile]
+      summary: Профиль и норма КБЖУ
+      description: |
+        Возвращает профиль и вычисленную норму (не хранится в БД).
+        Норма пересчитывается при каждом запросе по формуле
+        Миффлина–Сан Жеора.
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Профиль с нормой
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                id: "6521a3b5c9e8d761a2b3c4d5"
+                email: user@example.com
+                name: Алексей
+                sex: male
+                birth_date: "1996-03-15"
+                height_cm: 180
+                weight_kg: 80
+                activity: 1.55
+                goal: lose
+                norm:
+                  kcal: 2345
+                  protein: 176
+                  fat: 78
+                  carbs: 235
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Profile]
+      summary: Обновление профиля
+      description: |
+        Обновляет рост, вес, активность или цель.
+        Любое изменение физических параметров пересчитывает норму.
+        PATCH веса в профиле **не** создаёт запись в weight_logs.
+      operationId: updateProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+            example:
+              height_cm: 182
+              weight_kg: 79.5
+              activity: 1.725
+              goal: keep
+      responses:
+        '200':
+          description: Профиль обновлён, норма пересчитана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/products:
+    get:
+      tags: [Products]
+      summary: Поиск продуктов
+      description: |
+        Ищет по общему справочнику (`owner_id: null`) и продуктам
+        текущего пользователя. Чужие кастомные продукты не возвращаются.
+        Поиск по `name_lower`, регистронезависимый.
+      operationId: searchProducts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: |
+            Поисковая подстрока. Пустой или отсутствующий q —
+            весь доступный справочник (глобальные + продукты пользователя).
+          schema:
+            type: string
+            example: кур
+      responses:
+        '200':
+          description: Список продуктов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+              example:
+                - id: "6521a3b5c9e8d761a2b3c001"
+                  name: Куриная грудка (сырая)
+                  kcal: 113.0
+                  protein: 23.6
+                  fat: 1.9
+                  carbs: 0.4
+                  owner_id: null
+                - id: "6521a3b5c9e8d761a2b3c002"
+                  name: Куриные наггетсы домашние
+                  kcal: 245.0
+                  protein: 16.0
+                  fat: 12.0
+                  carbs: 18.0
+                  owner_id: "6521a3b5c9e8d761a2b3c4d5"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Products]
+      summary: Создание продукта пользователя
+      description: |
+        КБЖУ указываются на 100 г, неотрицательные.
+        `name_lower` генерируется на сервере, `owner_id` = id текущего пользователя.
+      operationId: createProduct
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+            example:
+              name: Протеиновый батончик Банан
+              kcal: 360.0
+              protein: 30.0
+              fat: 10.0
+              carbs: 35.0
+      responses:
+        '201':
+          description: Продукт создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/diary:
+    get:
+      tags: [Diary]
+      summary: Записи и сводка за день
+      description: |
+        Возвращает записи за день, итоги КБЖУ, норму и остаток.
+        Успешный день: есть ≥1 запись и калории в пределах нормы ±10%.
+      operationId: getDiary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: Дата YYYY-MM-DD (часовой пояс пользователя)
+          schema:
+            type: string
+            format: date
+            example: "2026-10-07"
+      responses:
+        '200':
+          description: Сводка за день
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiaryDayResponse'
+              example:
+                date: "2026-10-07"
+                entries:
+                  - id: "6521a3b5c9e8d761a2b3c111"
+                    product_id: "6521a3b5c9e8d761a2b3c001"
+                    product_name: Куриная грудка (сырая)
+                    meal: lunch
+                    grams: 250.0
+                    kcal: 282.5
+                    protein: 59.0
+                    fat: 4.8
+                    carbs: 1.0
+                totals:
+                  kcal: 1950.0
+                  protein: 140.0
+                  fat: 55.0
+                  carbs: 180.0
+                norm:
+                  kcal: 2345
+                  protein: 176
+                  fat: 78
+                  carbs: 235
+                remaining:
+                  kcal: 395.0
+                  protein: 36.0
+                  fat: 23.0
+                  carbs: 55.0
+                is_success: true
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Diary]
+      summary: Добавление записи в дневник
+      description: |
+        Рассчитывает КБЖУ порции: значение_на_100г × grams / 100,
+        округление до 1 знака (Decimal ROUND_HALF_UP).
+        `product_name` и КБЖУ денормализуются в запись.
+      operationId: createDiaryEntry
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDiaryEntryRequest'
+            example:
+              product_id: "6521a3b5c9e8d761a2b3c001"
+              grams: 250.0
+              meal: lunch
+              date: "2026-10-07"
+      responses:
+        '201':
+          description: Запись создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodEntry'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/diary/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID записи дневника
+        schema:
+          type: string
+          example: "6521a3b5c9e8d761a2b3c111"
+    patch:
+      tags: [Diary]
+      summary: Обновление записи дневника
+      description: Обновляет граммы и/или приём пищи. КБЖУ пересчитываются.
+      operationId: updateDiaryEntry
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDiaryEntryRequest'
+            example:
+              grams: 200.0
+              meal: dinner
+      responses:
+        '200':
+          description: Запись обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodEntry'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Diary]
+      summary: Удаление записи дневника
+      description: |
+        Удаляет запись только если она принадлежит текущему пользователю.
+        Иначе — 404 (как «не найдена»).
+      operationId: deleteDiaryEntry
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Запись удалена
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/weight:
+    get:
+      tags: [Weight]
+      summary: История веса за период
+      operationId: getWeightHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Начало периода YYYY-MM-DD
+          schema:
+            type: string
+            format: date
+            example: "2026-10-01"
+        - name: to
+          in: query
+          required: false
+          description: Конец периода YYYY-MM-DD
+          schema:
+            type: string
+            format: date
+            example: "2026-10-07"
+      responses:
+        '200':
+          description: Список замеров, отсортированных по дате
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeightLog'
+              example:
+                - id: "6521a3b5c9e8d761a2b3c201"
+                  date: "2026-10-01"
+                  weight_kg: 85.4
+                - id: "6521a3b5c9e8d761a2b3c202"
+                  date: "2026-10-03"
+                  weight_kg: 85.1
+                - id: "6521a3b5c9e8d761a2b3c203"
+                  date: "2026-10-07"
+                  weight_kg: 84.5
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Weight]
+      summary: Сохранение веса на дату
+      description: |
+        Upsert по (user_id, date). Повторный запрос на ту же дату
+        перезаписывает значение.
+        Обновляет weight_kg в профиле **только если** дата замера
+        не раньше самого свежего замера в weight_logs.
+      operationId: logWeight
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeightLogRequest'
+            example:
+              weight_kg: 84.5
+              date: "2026-10-07"
+      responses:
+        '201':
+          description: Замер сохранён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeightLog'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/streak:
+    get:
+      tags: [Streak]
+      summary: Текущая серия и рекорд
+      description: |
+        Текущая серия — число подряд идущих успешных дней,
+        последний из которых вчера или сегодня.
+        Незаконченный сегодняшний день серию не обрывает.
+        `today` необязателен: если нет — дата сервера.
+      operationId: getStreak
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: today
+          in: query
+          required: false
+          description: Дата «сегодня» YYYY-MM-DD (часовой пояс пользователя)
+          schema:
+            type: string
+            format: date
+            example: "2026-10-07"
+      responses:
+        '200':
+          description: Серия и рекорд
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakResponse'
+              example:
+                current: 3
+                record: 12
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/stats/calories:
+    get:
+      tags: [Stats]
+      summary: Калории по дням для графика
+      description: |
+        Возвращает калории по дням и норму.
+        `days` — число дней назад (по умолчанию 7).
+        `today` необязателен.
+        Прошлые дни оцениваются по **текущей** норме пользователя.
+      operationId: getCaloriesStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          required: false
+          description: Количество дней (включая today)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 7
+            example: 7
+        - name: today
+          in: query
+          required: false
+          description: Дата «сегодня» YYYY-MM-DD
+          schema:
+            type: string
+            format: date
+            example: "2026-10-07"
+      responses:
+        '200':
+          description: Статистика калорий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaloriesStatsResponse'
+              example:
+                norm_kcal: 2345
+                days:
+                  - date: "2026-10-01"
+                    kcal: 1950.0
+                    is_success: true
+                  - date: "2026-10-02"
+                    kcal: 2400.0
+                    is_success: false
+                  - date: "2026-10-03"
+                    kcal: 2010.0
+                    is_success: true
+                  - date: "2026-10-04"
+                    kcal: 1980.0
+                    is_success: true
+                  - date: "2026-10-05"
+                    kcal: 1500.0
+                    is_success: false
+                  - date: "2026-10-06"
+                    kcal: 2005.0
+                    is_success: true
+                  - date: "2026-10-07"
+                    kcal: 1650.0
+                    is_success: true
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: |
+        Токен сессии из ответа register/login.
+        Заголовок: `Authorization: Bearer <token>`.
+        Просроченный или отсутствующий токен → 401.
+
+  responses:
+    ValidationError:
+      description: Неверные входные данные (ValidationError)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+          example:
+            error:
+              code: validation_error
+              message: Рост должен быть от 100 до 250 см
+              field: height_cm
+    Unauthorized:
+      description: Токен не передан или сессия просрочена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+          example:
+            error:
+              code: unauthorized
+              message: Authentication required
+    NotFound:
+      description: Запись не найдена или принадлежит другому пользователю
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+          example:
+            error:
+              code: not_found
+              message: Resource not found
+
   schemas:
-    Error:
+    ErrorBody:
       type: object
+      required: [error]
       properties:
         error:
           type: object
           required: [code, message]
           properties:
-            code: {type: string, example: validation_error}
-            message: {type: string}
-            field: {type: string, example: height_cm}
+            code:
+              type: string
+              description: Машинный код ошибки
+              example: validation_error
+            message:
+              type: string
+              description: Человекочитаемое сообщение
+            field:
+              type: string
+              description: Поле, вызвавшее ошибку (для validation_error)
+              nullable: true
+
+    Norm:
+      type: object
+      description: Суточная норма КБЖУ (вычисляется, не хранится)
+      required: [kcal, protein, fat, carbs]
+      properties:
+        kcal:
+          type: integer
+          description: Норма калорий (округление ROUND_HALF_UP до целого)
+          example: 2345
+        protein:
+          type: integer
+          example: 176
+        fat:
+          type: integer
+          example: 78
+        carbs:
+          type: integer
+          example: 235
+
+    Nutrients:
+      type: object
+      required: [kcal, protein, fat, carbs]
+      properties:
+        kcal:
+          type: number
+          format: float
+        protein:
+          type: number
+          format: float
+        fat:
+          type: number
+          format: float
+        carbs:
+          type: number
+          format: float
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - sex
+        - birth_date
+        - height_cm
+        - weight_kg
+        - activity
+        - goal
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+          minLength: 1
+        sex:
+          type: string
+          enum: [male, female]
+        birth_date:
+          type: string
+          format: date
+          description: YYYY-MM-DD; возраст 14–100 лет
+        height_cm:
+          type: number
+          format: float
+          minimum: 100
+          maximum: 250
+        weight_kg:
+          type: number
+          format: float
+          minimum: 30
+          maximum: 300
+        activity:
+          type: number
+          format: float
+          enum: [1.2, 1.375, 1.55, 1.725, 1.9]
+          description: |
+            1.2 — минимальная, 1.375 — низкая, 1.55 — средняя,
+            1.725 — высокая, 1.9 — очень высокая
+        goal:
+          type: string
+          enum: [lose, keep, gain]
+          description: lose ×0.85, keep ×1.0, gain ×1.15
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      description: Ответ регистрации — токен и профиль
+      required: [token, profile]
+      properties:
+        token:
+          type: string
+          description: "Токен сессии (Authorization: Bearer <token>)"
+          example: "xK9mP2vR..."
+        profile:
+          $ref: '#/components/schemas/ProfileResponse'
+
+    LoginResponse:
+      type: object
+      description: |
+        Ответ входа — только токен (architecture: «200, токен»).
+        Профиль после входа фронт запрашивает через GET /api/profile.
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: "Токен сессии (Authorization: Bearer <token>)"
+          example: "xK9mP2vR..."
+
+    ProfileResponse:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - sex
+        - birth_date
+        - height_cm
+        - weight_kg
+        - activity
+        - goal
+        - norm
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        sex:
+          type: string
+          enum: [male, female]
+        birth_date:
+          type: string
+          format: date
+        height_cm:
+          type: number
+          format: float
+        weight_kg:
+          type: number
+          format: float
+        activity:
+          type: number
+          format: float
+          enum: [1.2, 1.375, 1.55, 1.725, 1.9]
+        goal:
+          type: string
+          enum: [lose, keep, gain]
+        norm:
+          $ref: '#/components/schemas/Norm'
+
+    UpdateProfileRequest:
+      type: object
+      description: |
+        Обновляет рост, вес, активность или цель (раздел RESTful API).
+        Хотя бы одно поле обязательно. PATCH веса не создаёт запись в weight_logs.
+        Норма пересчитывается при любом изменении.
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        height_cm:
+          type: number
+          format: float
+          minimum: 100
+          maximum: 250
+        weight_kg:
+          type: number
+          format: float
+          minimum: 30
+          maximum: 300
+        activity:
+          type: number
+          format: float
+          enum: [1.2, 1.375, 1.55, 1.725, 1.9]
+        goal:
+          type: string
+          enum: [lose, keep, gain]
+
+    Product:
+      type: object
+      required: [id, name, kcal, protein, fat, carbs]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kcal:
+          type: number
+          format: float
+          description: на 100 г
+        protein:
+          type: number
+          format: float
+        fat:
+          type: number
+          format: float
+        carbs:
+          type: number
+          format: float
+        owner_id:
+          type: string
+          nullable: true
+          description: null — общий справочник, иначе id владельца
+
+    CreateProductRequest:
+      type: object
+      required: [name, kcal, protein, fat, carbs]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        kcal:
+          type: number
+          format: float
+          minimum: 0
+        protein:
+          type: number
+          format: float
+          minimum: 0
+        fat:
+          type: number
+          format: float
+          minimum: 0
+        carbs:
+          type: number
+          format: float
+          minimum: 0
+
+    FoodEntry:
+      type: object
+      required:
+        - id
+        - product_id
+        - product_name
+        - date
+        - meal
+        - grams
+        - kcal
+        - protein
+        - fat
+        - carbs
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+        product_name:
+          type: string
+          description: Снимок названия на момент добавления
+        date:
+          type: string
+          format: date
+        meal:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+        grams:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 5000
+        kcal:
+          type: number
+          format: float
+          description: Округление до 1 знака
+        protein:
+          type: number
+          format: float
+        fat:
+          type: number
+          format: float
+        carbs:
+          type: number
+          format: float
+
+    CreateDiaryEntryRequest:
+      type: object
+      required: [product_id, grams, meal, date]
+      properties:
+        product_id:
+          type: string
+        grams:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 5000
+        meal:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+        date:
+          type: string
+          format: date
+          description: YYYY-MM-DD (передаёт фронт)
+
+    UpdateDiaryEntryRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        grams:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 5000
+        meal:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+
+    DiaryDayResponse:
+      type: object
+      required: [date, entries, totals, norm, remaining, is_success]
+      properties:
+        date:
+          type: string
+          format: date
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/FoodEntry'
+        totals:
+          $ref: '#/components/schemas/Nutrients'
+        norm:
+          $ref: '#/components/schemas/Norm'
+        remaining:
+          $ref: '#/components/schemas/Nutrients'
+          description: norm − totals (может быть отрицательным)
+        is_success:
+          type: boolean
+          description: ≥1 запись и kcal в пределах нормы ±10%
+
+    WeightLog:
+      type: object
+      required: [id, date, weight_kg]
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date
+        weight_kg:
+          type: number
+          format: float
+          minimum: 30
+          maximum: 300
+
+    WeightLogRequest:
+      type: object
+      required: [weight_kg, date]
+      properties:
+        weight_kg:
+          type: number
+          format: float
+          minimum: 30
+          maximum: 300
+        date:
+          type: string
+          format: date
+          description: YYYY-MM-DD (передаёт фронт)
+
+    StreakResponse:
+      type: object
+      required: [current, record]
+      properties:
+        current:
+          type: integer
+          minimum: 0
+          description: Текущая серия успешных дней
+        record:
+          type: integer
+          minimum: 0
+          description: Максимальная серия за всю историю
+
+    CaloriesDay:
+      type: object
+      required: [date, kcal, is_success]
+      properties:
+        date:
+          type: string
+          format: date
+        kcal:
+          type: number
+          format: float
+          description: Сумма калорий за день (0, если записей нет)
+        is_success:
+          type: boolean
+          description: Есть ≥1 запись и kcal в пределах нормы ±10%
+
+    CaloriesStatsResponse:
+      type: object
+      required: [norm_kcal, days]
+      properties:
+        norm_kcal:
+          type: integer
+          description: Текущая норма пользователя
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaloriesDay'
+          description: От старых дат к новым
