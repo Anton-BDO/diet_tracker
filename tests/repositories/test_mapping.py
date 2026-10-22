@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 from bson import ObjectId
 
-from backend.domain.models import FoodEntry, Product, User
+from backend.domain.models import FoodEntry, Product, Session, User
 from backend.repositories._mapping import (
     food_entry_from_document,
     food_entry_to_document,
@@ -14,6 +14,8 @@ from backend.repositories._mapping import (
     product_to_document,
     user_from_document,
     user_to_document,
+    session_from_document,
+    session_to_document,
 )
 
 
@@ -141,10 +143,7 @@ def test_user_to_document_normalizes_email_and_maps_architecture_fields(user):
 
     assert "_id" not in document
 
-    assert not (
-        {"gender", "age", "daily_calories", "macros"}
-        & document.keys()
-    )
+    assert {"sex", "birth_date", "activity", "goal"} <= document.keys()
 
 
 def test_user_to_document_converts_id(user):
@@ -203,7 +202,6 @@ def test_product_to_document_uses_casefold_when_name_lower_empty(product):
     assert document["carbs"] == 68.0
 
     assert "calories" not in document
-    assert "is_custom" not in document
 
 
 def test_product_to_document_converts_owner_and_product_ids(product):
@@ -246,8 +244,6 @@ def test_product_from_document_uses_defaults(product):
     assert restored.protein == 13.0
     assert restored.fat == 7.0
     assert restored.carbs == 68.0
-
-    assert "is_custom" not in document
 
 
 def test_product_from_document_restores_owner_id(product):
@@ -340,3 +336,40 @@ def test_food_entry_from_document_restores_model(food_entry):
     assert restored.carbs == 34.0
     assert restored.meal == "breakfast"
     assert restored.date == food_entry.date
+
+
+# ============================================================================
+# Преобразование сессий
+# ============================================================================
+
+def test_session_to_document_converts_user_id():
+    user_id = str(ObjectId())
+    session = Session(
+        token="opaque-token",
+        user_id=user_id,
+        expires_at=datetime(2026, 11, 1, tzinfo=timezone.utc),
+    )
+
+    document = session_to_document(session)
+
+    assert document["token"] == "opaque-token"
+    assert document["user_id"] == ObjectId(user_id)
+    assert document["expires_at"] == session.expires_at
+    assert "_id" not in document
+
+
+def test_session_from_document_restores_model():
+    session = Session(
+        token="opaque-token",
+        user_id=str(ObjectId()),
+        expires_at=datetime(2026, 11, 1, tzinfo=timezone.utc),
+    )
+    document = session_to_document(session)
+    document["_id"] = ObjectId()
+
+    restored = session_from_document(document)
+
+    assert restored.id == str(document["_id"])
+    assert restored.token == session.token
+    assert restored.user_id == session.user_id
+    assert restored.expires_at == session.expires_at

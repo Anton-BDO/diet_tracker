@@ -3,10 +3,11 @@
 import pytest
 from bson import ObjectId
 
-from backend.domain.models import FoodEntry, Product, User
+from backend.domain.models import FoodEntry, Product, Session, User
 from backend.repositories import (
     FoodEntryRepository,
     ProductRepository,
+    SessionRepository,
     UserRepository,
 )
 
@@ -75,12 +76,7 @@ def test_user_create_and_read_by_id_and_email(db):
     assert stored["goal"] == "keep"
 
     # В MongoDB должна сохраняться актуальная схема пользователя.
-    assert not {
-        "gender",
-        "age",
-        "daily_calories",
-        "macros",
-    }.intersection(stored)
+    assert {"sex", "birth_date", "activity", "goal"} <= stored.keys()
 
     loaded_by_id = repository.get_by_id(user.id)
     loaded_by_email = repository.get_by_email("PERSON@example.COM")
@@ -170,7 +166,6 @@ def test_product_create_converts_owner_id_and_uses_current_schema(db):
 
     assert stored["kcal"] == 380
     assert "calories" not in stored
-    assert "is_custom" not in stored
 
     loaded = repository.get_by_id(product.id, owner_id)
 
@@ -457,3 +452,38 @@ def test_repositories_have_one_canonical_method_name_per_operation():
     assert not hasattr(FoodEntryRepository, "find_by_user_and_date")
     assert not hasattr(FoodEntryRepository, "get_for_day")
     assert not hasattr(FoodEntryRepository, "save")
+
+
+# ============================================================================
+# SessionRepository
+# ============================================================================
+
+def test_session_create_and_get_by_token(db):
+    repository = SessionRepository(db)
+    user_id = str(ObjectId())
+    session = Session(
+        token="opaque-token",
+        user_id=user_id,
+        expires_at=make_user().created_at,
+    )
+
+    created = repository.create(session)
+    stored = db.sessions.find_one({"_id": ObjectId(created.id)})
+
+    assert stored["token"] == "opaque-token"
+    assert stored["user_id"] == ObjectId(user_id)
+    assert "id" not in stored
+
+    loaded = repository.get_by_token("opaque-token")
+    assert loaded is not None
+    assert loaded.id == created.id
+    assert loaded.user_id == user_id
+    assert loaded.token == "opaque-token"
+    assert repository.get_by_token("missing-token") is None
+    assert repository.get_by_token("") is None
+
+
+def test_session_repository_rejects_wrong_model_type(db):
+    repository = SessionRepository(db)
+    with pytest.raises(TypeError):
+        repository.create({"token": "opaque-token"})

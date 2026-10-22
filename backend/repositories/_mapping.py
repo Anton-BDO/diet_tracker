@@ -2,7 +2,7 @@
 
 from bson import ObjectId
 
-from backend.domain.models import FoodEntry, Product, User
+from backend.domain.models import FoodEntry, Product, Session, User
 
 
 def parse_object_id(value: str | ObjectId | None) -> ObjectId | None:
@@ -163,4 +163,30 @@ def food_entry_from_document(document: dict) -> FoodEntry:
         carbs=document["carbs"],
         created_at=document["created_at"],
         updated_at=document["updated_at"],
+    )
+
+
+def session_to_document(session: Session) -> dict:
+    """Преобразовать сессию в документ MongoDB."""
+    document = {
+        "token": session.token,
+        "user_id": _required_object_id(session.user_id, "session.user_id"),
+        "created_at": session.created_at,
+        "expires_at": session.expires_at,
+    }
+
+    if session.id is not None:
+        document["_id"] = _required_object_id(session.id, "session.id")
+
+    return document
+
+
+def session_from_document(document: dict) -> Session:
+    """Преобразовать документ MongoDB в доменную сессию."""
+    return Session(
+        id=str(document["_id"]),
+        token=document["token"],
+        user_id=str(document["user_id"]),
+        created_at=document["created_at"],
+        expires_at=document["expires_at"],
     )
