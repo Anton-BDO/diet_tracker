@@ -18,7 +18,7 @@ class ProductRepository:
         self._collection = database["products"]
 
     def create(self, product: Product) -> Product:
-        """Сохранить продукт и присвоить ему строковый id."""
+        """Создать продукт и вернуть его с назначенным id."""
         if not isinstance(product, Product):
             raise TypeError("product must be a Product dataclass")
 
@@ -31,11 +31,7 @@ class ProductRepository:
         return product
 
     def search(self, query: str, user_id: str) -> list[Product]:
-        """Найти системные и собственные продукты.
-
-        Поиск по имени не зависит от регистра. Пустой query возвращает
-        все доступные пользователю продукты.
-        """
+        """Найти системные продукты и продукты текущего пользователя."""
         owner_object_id = parse_object_id(user_id)
 
         if owner_object_id is None:
@@ -46,8 +42,7 @@ class ProductRepository:
         if not isinstance(query, str):
             raise TypeError("query must be a string")
 
-        # Видны только системные продукты и продукты текущего владельца.
-        visibility_filter = {
+        filters = {
             "$or": [
                 {"owner_id": None},
                 {"owner_id": owner_object_id},
@@ -57,20 +52,25 @@ class ProductRepository:
         normalized_query = query.strip().casefold()
 
         if normalized_query:
-            visibility_filter["name_lower"] = {
+            filters["name_lower"] = {
                 "$regex": re.escape(normalized_query)
             }
 
-        documents = self._collection.find(
-            visibility_filter
-        ).sort("name_lower", 1)
+        documents = self._collection.find(filters).sort(
+            "name_lower",
+            1,
+        )
 
         return [
             product_from_document(document)
             for document in documents
         ]
 
-    def get_by_id(self, product_id: str, user_id: str):
+    def get_by_id(
+        self,
+        product_id: str,
+        user_id: str,
+    ) -> Product | None:
         """Получить системный или собственный продукт."""
         object_id = parse_object_id(product_id)
         owner_object_id = parse_object_id(user_id)
@@ -92,9 +92,3 @@ class ProductRepository:
             return None
 
         return product_from_document(document)
-
-    # Альтернативные имена методов.
-    find = search
-    find_by_name = search
-    search_visible = search
-    save = create

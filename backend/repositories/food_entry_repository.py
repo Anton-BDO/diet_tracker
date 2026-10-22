@@ -1,5 +1,7 @@
 """Репозиторий дневника питания."""
 
+from datetime import datetime, timezone
+
 from backend.domain.models import FoodEntry
 from backend.repositories._mapping import (
     food_entry_from_document,
@@ -16,7 +18,7 @@ class FoodEntryRepository:
         self._collection = database["food_entries"]
 
     def create(self, entry: FoodEntry) -> FoodEntry:
-        """Добавить запись с преобразованными ссылками."""
+        """Создать запись дневника и назначить ей id."""
         if not isinstance(entry, FoodEntry):
             raise TypeError("entry must be a FoodEntry dataclass")
 
@@ -33,7 +35,7 @@ class FoodEntryRepository:
         user_id: str,
         date: str,
     ) -> list[FoodEntry]:
-        """Вернуть записи пользователя за день."""
+        """Получить записи пользователя за указанный день."""
         user_object_id = parse_object_id(user_id)
 
         if user_object_id is None:
@@ -58,22 +60,56 @@ class FoodEntryRepository:
             for document in documents
         ]
 
-    def delete(self, entry_id: str) -> bool:
-        """Физически удалить запись по id.
+    def update(
+        self,
+        entry: FoodEntry,
+        user_id: str,
+    ) -> FoodEntry | None:
+        """Обновить граммы и приём пищи своей записи."""
+        if not isinstance(entry, FoodEntry):
+            raise TypeError("entry must be a FoodEntry dataclass")
 
-        Вернуть True, если запись существовала.
-        """
-        object_id = parse_object_id(entry_id)
+        entry_object_id = parse_object_id(entry.id)
+        user_object_id = parse_object_id(user_id)
 
-        if object_id is None:
+        if entry_object_id is None or user_object_id is None:
+            return None
+
+        updated_at = datetime.now(timezone.utc)
+
+        result = self._collection.update_one(
+            {
+                "_id": entry_object_id,
+                "user_id": user_object_id,
+            },
+            {
+                "$set": {
+                    "grams": float(entry.grams),
+                    "meal": entry.meal,
+                    "updated_at": updated_at,
+                }
+            },
+        )
+
+        if result.matched_count == 0:
+            return None
+
+        entry.updated_at = updated_at
+        return entry
+
+    def delete(self, entry_id: str, user_id: str) -> bool:
+        """Удалить запись, только если она принадлежит пользователю."""
+        entry_object_id = parse_object_id(entry_id)
+        user_object_id = parse_object_id(user_id)
+
+        if entry_object_id is None or user_object_id is None:
             return False
 
         result = self._collection.delete_one(
-            {"_id": object_id}
+            {
+                "_id": entry_object_id,
+                "user_id": user_object_id,
+            }
         )
 
         return result.deleted_count == 1
-
-    find_by_user_and_date = get_by_user_and_date
-    get_for_day = get_by_user_and_date
-    save = create

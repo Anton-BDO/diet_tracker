@@ -18,13 +18,11 @@ class UserRepository:
         self._collection = database["users"]
 
     def create(self, user: User) -> User:
-        """Создать пользователя и записать сгенерированный id."""
+        """Создать пользователя и вернуть его с назначенным id."""
         if not isinstance(user, User):
             raise TypeError("user must be a User dataclass")
 
         document = user_to_document(user)
-
-        # При создании id генерирует MongoDB.
         document.pop("_id", None)
 
         result = self._collection.insert_one(document)
@@ -32,8 +30,8 @@ class UserRepository:
 
         return user
 
-    def get_by_id(self, user_id: str):
-        """Найти пользователя по строковому id."""
+    def get_by_id(self, user_id: str) -> User | None:
+        """Найти пользователя по строковому идентификатору."""
         object_id = parse_object_id(user_id)
 
         if object_id is None:
@@ -46,13 +44,12 @@ class UserRepository:
 
         return user_from_document(document)
 
-    def get_by_email(self, email: str):
-        """Найти пользователя по email без учета регистра."""
+    def get_by_email(self, email: str) -> User | None:
+        """Найти пользователя по email без учёта регистра."""
         if not isinstance(email, str) or not email.strip():
             return None
 
         normalized_email = email.strip().lower()
-
         document = self._collection.find_one(
             {"email": normalized_email}
         )
@@ -62,7 +59,7 @@ class UserRepository:
 
         return user_from_document(document)
 
-    def update(self, user: User):
+    def update(self, user: User) -> User | None:
         """Полностью заменить документ пользователя по id."""
         if not isinstance(user, User):
             raise TypeError("user must be a User dataclass")
@@ -70,9 +67,7 @@ class UserRepository:
         object_id = parse_object_id(user.id)
 
         if object_id is None:
-            raise ValueError(
-                "user.id must be a valid MongoDB ObjectId"
-            )
+            return None
 
         user.updated_at = datetime.now(timezone.utc)
 
@@ -88,8 +83,3 @@ class UserRepository:
             return None
 
         return user
-
-    # Альтернативные имена методов.
-    find_by_id = get_by_id
-    find_by_email = get_by_email
-    save = create

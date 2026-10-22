@@ -2,178 +2,165 @@
 
 from bson import ObjectId
 
-from backend.domain.models import FoodEntry, MacroTargets, Product, User
+from backend.domain.models import FoodEntry, Product, User
 
 
-def parse_object_id(value):
+def parse_object_id(value: str | ObjectId | None) -> ObjectId | None:
     """Преобразовать идентификатор в ObjectId или вернуть None."""
     if isinstance(value, ObjectId):
         return value
+
     if not isinstance(value, str) or not ObjectId.is_valid(value):
         return None
+
     return ObjectId(value)
 
 
+def _required_object_id(value: str | ObjectId, field: str) -> ObjectId:
+    """Преобразовать обязательный идентификатор."""
+    object_id = parse_object_id(value)
+
+    if object_id is None:
+        raise ValueError(
+            f"{field} must be a valid MongoDB ObjectId"
+        )
+
+    return object_id
+
+
 def user_to_document(user: User) -> dict:
-    """Подготовить пользователя к сохранению."""
+    """Преобразовать пользователя в документ MongoDB."""
     document = {
         "email": user.email.strip().lower(),
         "password_hash": user.password_hash,
         "name": user.name,
-        "gender": user.gender,
-        "age": user.age,
+        "sex": user.sex,
+        "birth_date": user.birth_date,
         "height_cm": float(user.height_cm),
         "weight_kg": float(user.weight_kg),
-        "activity": user.activity,
+        "activity": float(user.activity),
         "goal": user.goal,
-        "daily_calories": user.daily_calories,
-        "macros": {
-            "protein": float(user.macros.protein),
-            "fat": float(user.macros.fat),
-            "carbs": float(user.macros.carbs),
-        },
         "created_at": user.created_at,
         "updated_at": user.updated_at,
     }
 
     if user.id is not None:
-        object_id = parse_object_id(user.id)
-        if object_id is None:
-            raise ValueError(
-                "user.id must be a valid MongoDB ObjectId"
-            )
-        document["_id"] = object_id
+        document["_id"] = _required_object_id(user.id, "user.id")
 
     return document
 
 
 def user_from_document(document: dict) -> User:
-    """Преобразовать документ в пользователя."""
+    """Преобразовать документ MongoDB в пользователя."""
     return User(
         id=str(document["_id"]),
         email=document["email"],
         password_hash=document["password_hash"],
         name=document["name"],
-        gender=document["gender"],
-        age=document["age"],
+        sex=document["sex"],
+        birth_date=document["birth_date"],
         height_cm=document["height_cm"],
         weight_kg=document["weight_kg"],
         activity=document["activity"],
         goal=document["goal"],
-        daily_calories=document["daily_calories"],
-        macros=MacroTargets(**document["macros"]),
         created_at=document["created_at"],
         updated_at=document["updated_at"],
     )
 
 
 def product_to_document(product: Product) -> dict:
-    """Подготовить продукт для сохранения в MongoDB."""
+    """Преобразовать продукт в документ MongoDB."""
     owner_id = None
 
     if product.owner_id is not None:
-        owner_id = parse_object_id(product.owner_id)
-        if owner_id is None:
-            raise ValueError(
-                "product.owner_id must be a valid MongoDB ObjectId"
-            )
+        owner_id = _required_object_id(
+            product.owner_id,
+            "product.owner_id",
+        )
 
     document = {
         "name": product.name,
         "name_lower": product.name_lower or product.name.casefold(),
-        "calories": float(product.calories),
+        "kcal": float(product.kcal),
         "protein": float(product.protein),
         "fat": float(product.fat),
         "carbs": float(product.carbs),
-        "is_custom": product.is_custom,
         "owner_id": owner_id,
         "created_at": product.created_at,
     }
 
     if product.id is not None:
-        object_id = parse_object_id(product.id)
-        if object_id is None:
-            raise ValueError(
-                "product.id must be a valid MongoDB ObjectId"
-            )
-        document["_id"] = object_id
+        document["_id"] = _required_object_id(
+            product.id,
+            "product.id",
+        )
 
     return document
 
 
 def product_from_document(document: dict) -> Product:
-    """Преобразовать документ в продукт."""
+    """Преобразовать документ MongoDB в продукт."""
     owner_id = document.get("owner_id")
 
     return Product(
         id=str(document["_id"]),
         name=document["name"],
         name_lower=document.get("name_lower", ""),
-        calories=document["calories"],
+        kcal=document["kcal"],
         protein=document["protein"],
         fat=document["fat"],
         carbs=document["carbs"],
-        is_custom=document.get("is_custom", False),
         owner_id=str(owner_id) if owner_id is not None else None,
         created_at=document["created_at"],
     )
 
 
 def food_entry_to_document(entry: FoodEntry) -> dict:
-    """Подготовить запись дневника со ссылками ObjectId."""
-    user_id = parse_object_id(entry.user_id)
-    product_id = parse_object_id(entry.product_id)
-
-    if user_id is None:
-        raise ValueError(
-            "food_entry.user_id must be a valid MongoDB ObjectId"
-        )
-
-    if product_id is None:
-        raise ValueError(
-            "food_entry.product_id must be a valid MongoDB ObjectId"
-        )
-
+    """Преобразовать запись дневника в документ MongoDB."""
     document = {
-        "user_id": user_id,
-        "product_id": product_id,
+        "user_id": _required_object_id(
+            entry.user_id,
+            "food_entry.user_id",
+        ),
+        "product_id": _required_object_id(
+            entry.product_id,
+            "food_entry.product_id",
+        ),
         "product_name": entry.product_name,
+        "date": entry.date,
+        "meal": entry.meal,
         "grams": float(entry.grams),
-        "calories": float(entry.calories),
+        "kcal": float(entry.kcal),
         "protein": float(entry.protein),
         "fat": float(entry.fat),
         "carbs": float(entry.carbs),
-        "meal": entry.meal,
-        "date": entry.date,
         "created_at": entry.created_at,
         "updated_at": entry.updated_at,
     }
 
     if entry.id is not None:
-        object_id = parse_object_id(entry.id)
-        if object_id is None:
-            raise ValueError(
-                "food_entry.id must be a valid MongoDB ObjectId"
-            )
-        document["_id"] = object_id
+        document["_id"] = _required_object_id(
+            entry.id,
+            "food_entry.id",
+        )
 
     return document
 
 
 def food_entry_from_document(document: dict) -> FoodEntry:
-    """Преобразовать документ в FoodEntry."""
+    """Преобразовать документ MongoDB в запись дневника."""
     return FoodEntry(
         id=str(document["_id"]),
         user_id=str(document["user_id"]),
         product_id=str(document["product_id"]),
         product_name=document["product_name"],
+        date=document["date"],
+        meal=document["meal"],
         grams=document["grams"],
-        calories=document["calories"],
+        kcal=document["kcal"],
         protein=document["protein"],
         fat=document["fat"],
         carbs=document["carbs"],
-        meal=document["meal"],
-        date=document["date"],
         created_at=document["created_at"],
         updated_at=document["updated_at"],
     )
