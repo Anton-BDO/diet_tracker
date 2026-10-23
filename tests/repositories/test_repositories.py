@@ -348,7 +348,7 @@ def test_food_entry_delete_requires_owner(db):
     assert repository.delete("invalid-id", owner_id) is False
 
 
-def test_food_entry_update_changes_grams_and_meal_for_owner(db):
+def test_food_entry_update_changes_grams_meal_and_nutrients_for_owner(db):
     repository = FoodEntryRepository(db)
 
     user_id = str(ObjectId())
@@ -359,6 +359,10 @@ def test_food_entry_update_changes_grams_and_meal_for_owner(db):
 
     entry.grams = 100
     entry.meal = "lunch"
+    entry.kcal = 380
+    entry.protein = 13
+    entry.fat = 7
+    entry.carbs = 68
 
     result = repository.update(entry, user_id)
 
@@ -369,12 +373,11 @@ def test_food_entry_update_changes_grams_and_meal_for_owner(db):
     assert stored["grams"] == 100
     assert stored["meal"] == "lunch"
 
-    # Репозиторий обновляет только поля PATCH.
-    # Пересчёт КБЖУ при изменении граммов выполняется сервисом.
-    assert stored["kcal"] == 190
-    assert stored["protein"] == 6.5
-    assert stored["fat"] == 3.5
-    assert stored["carbs"] == 34
+    # Репозиторий сохраняет КБЖУ, рассчитанные сервисом.
+    assert stored["kcal"] == 380
+    assert stored["protein"] == 13
+    assert stored["fat"] == 7
+    assert stored["carbs"] == 68
 
     # MongoDB хранит даты с точностью до миллисекунд.
     assert result.updated_at is not None

@@ -85,6 +85,10 @@ class FoodEntryRepository:
             {
                 "$set": {
                     "grams": float(entry.grams),
+                    "kcal": float(entry.kcal),
+                    "protein": float(entry.protein),
+                    "fat": float(entry.fat),
+                    "carbs": float(entry.carbs),
                     "meal": entry.meal,
                     "updated_at": updated_at,
                 }
