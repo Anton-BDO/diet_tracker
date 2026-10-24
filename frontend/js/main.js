@@ -1,6 +1,7 @@
 import { api } from "./api.js";
 import { store } from "./store.js";
 import { renderLogin } from "./views/login.js";
+import { renderDashboard } from "./views/dashboard.js";
 
 const root = document.getElementById("app");
 let cleanup = () => {};
@@ -45,18 +46,9 @@ function renderRoute() {
     location.replace("#/dashboard");
     return;
   }
-  root.innerHTML = `
-    <section class="dashboard-placeholder">
-      <h1 tabindex="-1">Вход выполнен</h1>
-      <p>Пользователь: <strong data-profile-name></strong>.</p>
-      <p class="muted">Главная страница пока в разработке.</p>
-      <button type="button" class="button-secondary" data-logout>Выйти из аккаунта</button>
-    </section>`;
-  root.querySelector("[data-profile-name]").textContent = store.getState().profile.name;
-  root.querySelector("h1").focus();
-  root.querySelector("[data-logout]").addEventListener("click", async event => {
-    event.target.disabled = true;
-    event.target.textContent = "Выходим…";
+  cleanup = renderDashboard(root, {
+  store,
+  onLogout: async () => {
     try {
       await store.logout();
     } catch {
@@ -64,7 +56,8 @@ function renderRoute() {
     } finally {
       location.replace("#/login");
     }
-  });
+  }
+});
 }
 
 window.addEventListener("auth:expired", () => {
