@@ -1,7 +1,7 @@
 import { api } from "./api.js";
 
 export function createAuthStore({ client = api, storage = globalThis.localStorage } = {}) {
-  let state = Object.freeze({ profile: null, pending: false, error: null });
+  let state = Object.freeze({ profile: null, pending: false, error: null, daySummary: null });
   const listeners = new Set();
   const tokenKey = client.tokenKey ?? "token";
 
@@ -12,7 +12,7 @@ export function createAuthStore({ client = api, storage = globalThis.localStorag
 
   function clearSession() {
     storage?.removeItem(tokenKey);
-    update({ profile: null, pending: false, error: null });
+    update({ profile: null, pending: false, error: null, daySummary: null });
   }
 
   async function authenticate(method, data) {
@@ -51,6 +51,20 @@ export function createAuthStore({ client = api, storage = globalThis.localStorag
     clearSession,
     login: data => authenticate("login", data),
     register: data => authenticate("register", data),
+    
+    // ВОТ НАШ НОВЫЙ МЕТОД:
+    async loadDashboard() {
+      update({ pending: true, error: null });
+      try {
+        const data = await client.daySummary();
+        update({ daySummary: data });
+      } catch (error) {
+        update({ error });
+      } finally {
+        update({ pending: false });
+      }
+    },
+
     async restore() {
       if (!storage?.getItem(tokenKey)) return null;
       update({ pending: true, error: null });
