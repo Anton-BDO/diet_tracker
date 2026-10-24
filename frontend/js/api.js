@@ -66,6 +66,7 @@ export function createApiClient({
     login: body => request("/auth/login", { method: "POST", body }),
     register: body => request("/auth/register", { method: "POST", body }),
     profile: () => request("/profile"),
+    daySummary: () => request("/day-summary"),
     logout: () => request("/auth/logout", { method: "POST" }),
   };
 }
