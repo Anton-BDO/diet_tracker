@@ -24,3 +24,12 @@ jobs:
 
       - name: Tests and coverage >= 80%
         run: pytest
+
+      # Моки фронта проверяем встроенным раннером node,
+      # npm и сторонние пакеты не нужны
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Frontend mock tests (node --test)
+        run: node --test tests/frontend/*.test.mjs
