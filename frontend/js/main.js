@@ -46,18 +46,19 @@ function renderRoute() {
     location.replace("#/dashboard");
     return;
   }
+    
   cleanup = renderDashboard(root, {
-  store,
-  onLogout: async () => {
-    try {
-      await store.logout();
-    } catch {
-      store.clearSession();
-    } finally {
-      location.replace("#/login");
+    store,
+    onLogout: async () => {
+      try {
+        await store.logout();
+      } catch {
+        store.clearSession();
+      } finally {
+        location.replace("#/login");
+      }
     }
-  }
-});
+  });
 }
 
 window.addEventListener("auth:expired", () => {
