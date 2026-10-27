@@ -15,8 +15,10 @@ export function renderDashboard(root, { store, onLogout }) {
 
   const unsubscribe = store.subscribe(state => {
     if (state.error) {
-      root.querySelector(".dashboard-placeholder").innerHTML = 
-        `<p class="form-error">Ошибка: ${state.error.message || "Не удалось загрузить данные"}</p>`;
+      const errorContainer = root.querySelector(".dashboard-placeholder");
+      errorContainer.innerHTML = `<p class="form-error"></p>`;
+      errorContainer.querySelector(".form-error").textContent = 
+        `Ошибка: ${state.error.message || "Не удалось загрузить данные"}`;
       return;
     }
 
@@ -32,51 +34,50 @@ export function renderDashboard(root, { store, onLogout }) {
     }, {});
 
     root.innerHTML = `
-      <section class="dashboard-placeholder" style="max-width: 600px; margin: 0 auto; text-align: left;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-          <h1 tabindex="-1" style="margin: 0;">Привет, ${name}!</h1>
+      <section class="dashboard-placeholder dashboard-container">
+        <div class="dashboard-header">
+          <h1 tabindex="-1" class="dashboard-title" data-user-name></h1>
           <button type="button" class="button-secondary" data-logout>Выйти</button>
         </div>
         
-        <div class="auth-card" style="max-width: 100%; margin: 0 0 24px 0; padding: 20px;">
-          <h2 style="margin: 0 0 10px 0; font-size: 18px;">Калории: ${totals.kcal} / ${norm.kcal} ккал</h2>
+        <div class="auth-card dashboard-card">
+          <h2 class="dashboard-calories-title">
+            Калории: <span>${totals.kcal}</span> / <span>${norm.kcal}</span> ккал
+          </h2>
           
-          <!-- Прогресс-бар -->
-          <div style="width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; margin-bottom: 20px; overflow: hidden;">
-            <div style="height: 100%; width: ${Math.min((totals.kcal / norm.kcal) * 100, 100)}%; background: ${remaining.kcal < 0 ? 'var(--error)' : 'var(--primary)'};"></div>
+          <div class="dashboard-progress-bg">
+            <div class="dashboard-progress-fill ${remaining.kcal < 0 ? 'bg-error' : 'bg-primary'}" style="width: ${Math.min((totals.kcal / norm.kcal) * 100, 100)}%;"></div>
           </div>
 
-          <!-- БЖУ -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div class="dashboard-macros">
             <div>
-              <span class="muted" style="font-size: 12px;">Белки</span>
-              <div style="font-weight: 600;">${totals.protein} г <span class="muted" style="font-weight: normal; font-size: 12px;">/ ${norm.protein}</span></div>
+              <span class="muted macro-label">Белки</span>
+              <div class="macro-value">${totals.protein} г <span class="muted macro-norm">/ ${norm.protein}</span></div>
             </div>
             <div>
-              <span class="muted" style="font-size: 12px;">Жиры</span>
-              <div style="font-weight: 600;">${totals.fat} г <span class="muted" style="font-weight: normal; font-size: 12px;">/ ${norm.fat}</span></div>
+              <span class="muted macro-label">Жиры</span>
+              <div class="macro-value">${totals.fat} г <span class="muted macro-norm">/ ${norm.fat}</span></div>
             </div>
             <div>
-              <span class="muted" style="font-size: 12px;">Углеводы</span>
-              <div style="font-weight: 600;">${totals.carbs} г <span class="muted" style="font-weight: normal; font-size: 12px;">/ ${norm.carbs}</span></div>
+              <span class="muted macro-label">Углеводы</span>
+              <div class="macro-value">${totals.carbs} г <span class="muted macro-norm">/ ${norm.carbs}</span></div>
             </div>
             <div>
-              <span class="muted" style="font-size: 12px;">Осталось</span>
-              <div style="font-weight: 600; color: ${remaining.kcal < 0 ? 'var(--error)' : 'var(--ok)'};">${remaining.kcal} ккал</div>
+              <span class="muted macro-label">Осталось</span>
+              <div class="macro-value ${remaining.kcal < 0 ? 'text-error' : 'text-ok'}">${remaining.kcal} ккал</div>
             </div>
           </div>
 
-          <!-- Список еды -->
-          <h3 style="font-size: 15px; border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 12px;">Что съедено сегодня:</h3>
+          <h3 class="dashboard-meals-title">Что съедено сегодня:</h3>
           
-          <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="dashboard-meals-list">
             ${Object.entries(groupedMeals).map(([mealType, items]) => `
               <div>
-                <h4 style="margin: 0 0 6px 0; font-size: 13px; color: var(--primary);">${getMealName(mealType)}</h4>
-                <ul style="list-style: none; padding: 0; margin: 0;">
+                <h4 class="meal-type-title">${getMealName(mealType)}</h4>
+                <ul class="meal-items-list">
                   ${items.map(item => `
-                    <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px;">
-                      <span>${item.product_name} <span class="muted">(${item.grams}г)</span></span>
+                    <li class="meal-item">
+                      <span class="meal-item-name" data-product-name="${item.product_name}" data-product-grams="${item.grams}"></span>
                       <strong>${item.kcal} ккал</strong>
                     </li>
                   `).join('')}
@@ -85,9 +86,22 @@ export function renderDashboard(root, { store, onLogout }) {
             `).join('')}
           </div>
         </div>
-
-        <button type="button" class="button-primary" style="width: 100%;">+ Добавить еду</button>
+        <button type="button" class="button-primary dashboard-add-btn">+ Добавить еду</button>
       </section>`;
+
+    root.querySelector("[data-user-name]").textContent = `Привет, ${name}!`;
+
+    root.querySelectorAll("[data-product-name]").forEach(el => {
+      const prodName = el.getAttribute("data-product-name");
+      const grams = el.getAttribute("data-product-grams");
+      
+      el.textContent = `${prodName} `;
+      
+      const span = document.createElement("span");
+      span.className = "muted";
+      span.textContent = `(${grams}г)`;
+      el.appendChild(span);
+    });
 
     root.querySelector("[data-logout]").addEventListener("click", async (e) => {
       e.target.disabled = true;
@@ -97,6 +111,5 @@ export function renderDashboard(root, { store, onLogout }) {
   });
 
   store.loadDashboard().catch(() => {});
-
   return unsubscribe;
 }
