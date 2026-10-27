@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { localDate } from "./auth-validation.js";
 
 export function createAuthStore({ client = api, storage = globalThis.localStorage } = {}) {
   let state = Object.freeze({ profile: null, pending: false, error: null, daySummary: null });
@@ -52,11 +53,10 @@ export function createAuthStore({ client = api, storage = globalThis.localStorag
     login: data => authenticate("login", data),
     register: data => authenticate("register", data),
     
-    // ВОТ НАШ НОВЫЙ МЕТОД:
     async loadDashboard() {
       update({ pending: true, error: null });
       try {
-        const data = await client.daySummary();
+        const data = await client.daySummary(localDate()); 
         update({ daySummary: data });
       } catch (error) {
         update({ error });
