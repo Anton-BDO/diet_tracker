@@ -92,3 +92,10 @@ class ProductRepository:
             return None
 
         return product_from_document(document)
+
+    def exists_by_name_lower(self, name_lower: str) -> bool:
+        """Проверить наличие продукта по нормализованному названию."""
+        return self._collection.find_one(
+            {"name_lower": name_lower},
+            {"_id": 1},
+        ) is not None
