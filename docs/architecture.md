@@ -132,6 +132,7 @@ diet-tracker/
 ├── scripts/seed_products.py
 ├── docs/                    # architecture.md, openapi.yaml, Postman
 ├── .github/                 # workflows/ci.yml и шаблон PR
+├── .githooks/               # pre-commit hook с проверками как в CI
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt         # pymongo
@@ -363,6 +364,11 @@ push в `main`. Задача `test` выполняет шаги:
 
 Если flake8 находит замечание или падает хотя бы один тест на Python
 или Node, задача завершается с ошибкой и PR нельзя слить.
+
+Те же проверки до коммита запускает git hook `.githooks/pre-commit`.
+Подключается один раз командой `git config core.hooksPath .githooks`
+(подробнее в `CONTRIBUTING.md`). Если проверка падает, коммит не
+создаётся. Так ошибки ловятся до push, а CI страхует уже на сервере.
 
 Локально тесты моков запускаются той же командой из корня
 репозитория, нужен Node.js 20 или новее. В Git Bash, Linux и macOS
