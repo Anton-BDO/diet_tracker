@@ -60,6 +60,73 @@ class FoodEntryRepository:
             for document in documents
         ]
 
+    def get_by_id(self, entry_id: str, user_id: str) -> FoodEntry | None:
+        """Получить запись, только если она принадлежит пользователю."""
+        entry_object_id = parse_object_id(entry_id)
+        user_object_id = parse_object_id(user_id)
+
+        if entry_object_id is None or user_object_id is None:
+            return None
+
+        document = self._collection.find_one(
+            {
+                "_id": entry_object_id,
+                "user_id": user_object_id,
+            }
+        )
+
+        if document is None:
+            return None
+
+        return food_entry_from_document(document)
+
+    def get_by_user_and_period(
+        self,
+        user_id: str,
+        date_from: str,
+        date_to: str,
+    ) -> list[FoodEntry]:
+        """Записи за период включительно, от старых дат к новым."""
+        user_object_id = parse_object_id(user_id)
+
+        if user_object_id is None:
+            raise ValueError(
+                "user_id must be a valid MongoDB ObjectId"
+            )
+
+        return self._find_sorted(
+            {
+                "user_id": user_object_id,
+                "date": {"$gte": date_from, "$lte": date_to},
+            }
+        )
+
+    def get_all_by_user(self, user_id: str) -> list[FoodEntry]:
+        """Все записи пользователя, от старых дат к новым."""
+        user_object_id = parse_object_id(user_id)
+
+        if user_object_id is None:
+            raise ValueError(
+                "user_id must be a valid MongoDB ObjectId"
+            )
+
+        return self._find_sorted({"user_id": user_object_id})
+
+    def _find_sorted(self, filters: dict) -> list[FoodEntry]:
+        """Найти документы и вернуть модели в порядке даты и времени."""
+        documents = self._collection.find(filters).sort(
+            [
+                ("date", 1),
+                ("created_at", 1),
+                ("_id", 1),
+            ]
+        )
+
+        return [
+            food_entry_from_document(document)
+            for document in documents
+        ]
+
     def update(
         self,
         entry: FoodEntry,

@@ -10,6 +10,12 @@ from backend.api.handlers.auth import (
     make_logout_handler,
     make_register_handler,
 )
+from backend.api.handlers.diary import (
+    make_create_entry_handler,
+    make_delete_entry_handler,
+    make_get_day_handler,
+    make_update_entry_handler,
+)
 from backend.api.handlers.health import make_health_handler
 from backend.api.handlers.products import (
     make_create_product_handler,
@@ -24,16 +30,18 @@ from backend.api.server import create_server
 from backend.config import load_settings
 from backend.db import create_client, ensure_indexes, get_database
 from backend.repositories import (
+    FoodEntryRepository,
     ProductRepository,
     SessionRepository,
     UserRepository,
 )
 from backend.services.auth import AuthService
+from backend.services.diary import DiaryService
 from backend.services.products import ProductsService
 from backend.services.profile import ProfileService
 
 
-def build_router(client, users, sessions, products, clock=None):
+def build_router(client, users, sessions, products, entries, clock=None):
     """Зарегистрировать все маршруты API с их сервисами."""
     router = Router()
     router.get(
@@ -44,6 +52,7 @@ def build_router(client, users, sessions, products, clock=None):
     auth_service = AuthService(users, sessions, clock=clock)
     profile_service = ProfileService(users)
     products_service = ProductsService(products)
+    diary_service = DiaryService(entries, products, profile_service)
 
     router.post(
         "/api/auth/register",
@@ -61,6 +70,16 @@ def build_router(client, users, sessions, products, clock=None):
         "/api/products",
         make_create_product_handler(products_service),
     )
+    router.get("/api/diary", make_get_day_handler(diary_service))
+    router.post("/api/diary", make_create_entry_handler(diary_service))
+    router.patch(
+        "/api/diary/{id}",
+        make_update_entry_handler(diary_service),
+    )
+    router.delete(
+        "/api/diary/{id}",
+        make_delete_entry_handler(diary_service),
+    )
     return router
 
 
@@ -72,8 +91,14 @@ def build_server(settings, client, *, session_repository=None, clock=None):
         session_repository = SessionRepository(db)
     users = UserRepository(db)
     products = ProductRepository(db)
+    entries = FoodEntryRepository(db)
     router = build_router(
-        client, users, session_repository, products, clock=clock,
+        client,
+        users,
+        session_repository,
+        products,
+        entries,
+        clock=clock,
     )
     return create_server(
         router,

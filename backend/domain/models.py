@@ -74,8 +74,8 @@ def _require_nonnegative(value: float, field_name: str) -> float:
     return number
 
 
-def _validate_date(value: str, field_name: str = "date") -> date:
-    """Проверить дату в формате YYYY-MM-DD."""
+def validate_date(value: str, field_name: str = "date") -> date:
+    """Проверить дату в формате YYYY-MM-DD и её реальность."""
     _require_nonempty(value, field_name)
 
     try:
@@ -97,7 +97,7 @@ def _validate_date(value: str, field_name: str = "date") -> date:
 
 def age_on(birth_date: str, today: Optional[date] = None) -> int:
     """Рассчитать полный возраст на указанную дату."""
-    born = _validate_date(birth_date, "birth_date")
+    born = validate_date(birth_date, "birth_date")
     current = today or date.today()
 
     if born > current:
@@ -292,7 +292,7 @@ class FoodEntry:
                 "meal",
             )
 
-        _validate_date(self.date)
+        validate_date(self.date)
 
         if self.id is not None:
             _require_nonempty(self.id, "id")
@@ -318,7 +318,7 @@ class WeightLog:
             300,
         )
 
-        _validate_date(self.date)
+        validate_date(self.date)
 
         if self.id is not None:
             _require_nonempty(self.id, "id")

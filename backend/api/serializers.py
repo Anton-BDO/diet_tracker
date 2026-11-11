@@ -28,3 +28,19 @@ def product_to_public(product):
         "carbs": product.carbs,
         "owner_id": product.owner_id,
     }
+
+
+def entry_to_public(entry):
+    """Публичные поля записи дневника."""
+    return {
+        "id": entry.id,
+        "product_id": entry.product_id,
+        "product_name": entry.product_name,
+        "date": entry.date,
+        "meal": entry.meal,
+        "grams": entry.grams,
+        "kcal": entry.kcal,
+        "protein": entry.protein,
+        "fat": entry.fat,
+        "carbs": entry.carbs,
+    }
