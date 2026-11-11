@@ -44,3 +44,12 @@ def entry_to_public(entry):
         "fat": entry.fat,
         "carbs": entry.carbs,
     }
+
+
+def weight_log_to_public(log):
+    """Публичные поля замера веса."""
+    return {
+        "id": log.id,
+        "date": log.date,
+        "weight_kg": log.weight_kg,
+    }

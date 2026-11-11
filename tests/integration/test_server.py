@@ -11,6 +11,7 @@ from backend.repositories import (
     ProductRepository,
     SessionRepository,
     UserRepository,
+    WeightRepository,
 )
 
 
@@ -41,9 +42,10 @@ def test_health_with_app_router(run_server, mongo_client, db, http):
     sessions = SessionRepository(db)
     products = ProductRepository(db)
     entries = FoodEntryRepository(db)
-    url = run_server(
-        build_router(mongo_client, users, sessions, products, entries),
-    )
+    weights = WeightRepository(db)
+    url = run_server(build_router(
+        mongo_client, users, sessions, products, entries, weights,
+    ))
     status, headers, body = http(url + "/api/health")
     assert status == 200
     assert body == {"status": "ok", "db": "ok"}
