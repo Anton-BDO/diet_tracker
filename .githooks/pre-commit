@@ -15,7 +15,8 @@ set -e
 run_python_check() {
     if ! command -v "$1" >/dev/null 2>&1; then
         echo "pre-commit: $1 не найден в PATH."
-        echo "Активируй виртуальное окружение: venv/Scripts/activate"
+        echo "Активируй виртуальное окружение:"
+        echo "venv/bin/activate или venv/Scripts/activate"
         exit 1
     fi
     echo "pre-commit: $*"
@@ -25,7 +26,9 @@ run_python_check() {
 run_python_check flake8 backend tests scripts
 run_python_check pytest -q
 
-# Тесты фронта только если Node.js установлен, как и написано в задаче
+# Тесты фронта только если Node.js установлен, как и написано в задаче.
+# Маску *.test.mjs раскрывает оболочка (Git Bash, Linux, macOS).
+# В cmd/PowerShell файлы нужно перечислить явно, как в architecture.md.
 if command -v node >/dev/null 2>&1; then
     echo "pre-commit: node --test tests/frontend/*.test.mjs"
     node --test tests/frontend/*.test.mjs
