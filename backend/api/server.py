@@ -13,7 +13,12 @@ from backend.api.http_utils import (
     cors_headers,
     error_response,
 )
-from backend.domain.errors import ConflictError, NotFoundError, ValidationError
+from backend.domain.errors import (
+    ConflictError,
+    NotFoundError,
+    UnauthorizedError,
+    ValidationError,
+)
 
 API_PREFIX = "/api"
 logger = logging.getLogger(__name__)
@@ -35,7 +40,9 @@ def dispatch(router, request, authenticate=authenticate_request):
     except NotFoundError as exc:
         return error_response(404, "not_found", str(exc))
     except ConflictError as exc:
-        return error_response(409, "conflict", str(exc))
+        return error_response(409, "conflict", str(exc), exc.field)
+    except UnauthorizedError as exc:
+        return error_response(401, "unauthorized", str(exc))
     except Exception:
         logger.exception("Ошибка в %s %s", request.method, request.path)
         return error_response(

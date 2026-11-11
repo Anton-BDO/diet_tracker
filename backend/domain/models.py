@@ -1,11 +1,14 @@
 """Доменные модели diet_tracker."""
 
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from math import isfinite
 from typing import Literal, Optional
 
 from backend.domain.errors import ValidationError
+
+_EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 Sex = Literal["male", "female"]
@@ -169,7 +172,7 @@ class User:
         self.email = self.email.strip().lower()
         self.name = self.name.strip()
 
-        if "@" not in self.email or self.email.startswith("@"):
+        if not _EMAIL.fullmatch(self.email):
             raise ValidationError(
                 "Укажите корректный email",
                 "email",

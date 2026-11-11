@@ -125,6 +125,28 @@ def test_user_rejects_bad_email_with_field():
     assert error.value.field == "email"
 
 
+@pytest.mark.parametrize("email", [
+    "bad@",
+    "a@@b",
+    "a b@example.com",
+    "@example.com",
+    "user@",
+    "user@.com",
+    "user@example",
+    "user@@example.com",
+])
+def test_user_rejects_malformed_email(email):
+    with pytest.raises(ValidationError) as error:
+        make_user(email=email)
+
+    assert error.value.field == "email"
+
+
+def test_user_accepts_normal_emails():
+    for email in ["user@example.com", "a.b+tag@sub.example.co"]:
+        assert make_user(email=email).email == email
+
+
 def test_age_on_calculates_completed_years():
     assert age_on("2000-10-21", date(2026, 10, 20)) == 25
     assert age_on("2000-10-20", date(2026, 10, 20)) == 26

@@ -181,7 +181,7 @@ def test_build_server_binds_session_dependency(
     threading.Thread(target=server.serve_forever, daemon=True).start()
     host, port = server.server_address
     try:
-        # Profile ещё не реализован: валидная сессия проходит к роутеру → 404.
+        # Валидная сессия проходит middleware, но user-a нет в базе: 404.
         status, _, body = http(f"http://{host}:{port}/api/profile", headers={
             "Authorization": "Bearer token-a",
         })

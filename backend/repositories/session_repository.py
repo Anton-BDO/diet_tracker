@@ -33,3 +33,11 @@ class SessionRepository:
         if document is None:
             return None
         return session_from_document(document)
+
+    def delete_by_token(self, token: str) -> bool:
+        """Удалить сессию по токену; True, если она существовала."""
+        if not isinstance(token, str) or not token:
+            return False
+
+        result = self._collection.delete_one({"token": token})
+        return result.deleted_count == 1
