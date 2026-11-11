@@ -11,6 +11,10 @@ from backend.api.handlers.auth import (
     make_register_handler,
 )
 from backend.api.handlers.health import make_health_handler
+from backend.api.handlers.products import (
+    make_create_product_handler,
+    make_search_products_handler,
+)
 from backend.api.handlers.profile import (
     make_get_profile_handler,
     make_update_profile_handler,
@@ -19,12 +23,17 @@ from backend.api.router import Router
 from backend.api.server import create_server
 from backend.config import load_settings
 from backend.db import create_client, ensure_indexes, get_database
-from backend.repositories import SessionRepository, UserRepository
+from backend.repositories import (
+    ProductRepository,
+    SessionRepository,
+    UserRepository,
+)
 from backend.services.auth import AuthService
+from backend.services.products import ProductsService
 from backend.services.profile import ProfileService
 
 
-def build_router(client, users, sessions, clock=None):
+def build_router(client, users, sessions, products, clock=None):
     """Зарегистрировать все маршруты API с их сервисами."""
     router = Router()
     router.get(
@@ -34,6 +43,7 @@ def build_router(client, users, sessions, clock=None):
 
     auth_service = AuthService(users, sessions, clock=clock)
     profile_service = ProfileService(users)
+    products_service = ProductsService(products)
 
     router.post(
         "/api/auth/register",
@@ -43,6 +53,14 @@ def build_router(client, users, sessions, clock=None):
     router.post("/api/auth/logout", make_logout_handler(auth_service))
     router.get("/api/profile", make_get_profile_handler(profile_service))
     router.patch("/api/profile", make_update_profile_handler(profile_service))
+    router.get(
+        "/api/products",
+        make_search_products_handler(products_service),
+    )
+    router.post(
+        "/api/products",
+        make_create_product_handler(products_service),
+    )
     return router
 
 
@@ -53,7 +71,10 @@ def build_server(settings, client, *, session_repository=None, clock=None):
     if session_repository is None:
         session_repository = SessionRepository(db)
     users = UserRepository(db)
-    router = build_router(client, users, session_repository, clock=clock)
+    products = ProductRepository(db)
+    router = build_router(
+        client, users, session_repository, products, clock=clock,
+    )
     return create_server(
         router,
         settings.host,
