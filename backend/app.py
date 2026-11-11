@@ -10,6 +10,7 @@ from backend.api.router import Router
 from backend.api.server import create_server
 from backend.config import load_settings
 from backend.db import create_client, ensure_indexes, get_database
+from backend.repositories import SessionRepository
 
 
 def build_router(client):
@@ -29,6 +30,8 @@ def build_server(settings, client, *, session_repository=None, clock=None):
     """Подготовить базу и собрать сервер. В тестах client = mongomock."""
     db = get_database(client, settings.db_name)
     ensure_indexes(db)
+    if session_repository is None:
+        session_repository = SessionRepository(db)
     router = build_router(client)
     return create_server(
         router,
