@@ -1,0 +1,39 @@
+#!/bin/sh
+# Pre-commit hook: перед коммитом прогоняем те же проверки, что и CI
+# (.github/workflows/ci.yml), чтобы ошибки ловились до push.
+#
+# Подключить один раз после клона репозитория:
+#   git config core.hooksPath .githooks
+#
+# Обойти хук при необходимости: git commit --no-verify
+
+# Останавливаемся на первой же упавшей проверке
+set -e
+
+# Проверка команды Python-инструментов: без виртуального окружения
+# flake8 и pytest не найдутся, тогда подсказываем, что активировать.
+run_python_check() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        echo "pre-commit: $1 не найден в PATH."
+        echo "Активируй виртуальное окружение:"
+        echo "venv/bin/activate или venv/Scripts/activate"
+        exit 1
+    fi
+    echo "pre-commit: $*"
+    "$@"
+}
+
+run_python_check flake8 backend tests scripts
+run_python_check pytest -q
+
+# Тесты фронта только если Node.js установлен, как и написано в задаче.
+# Маску *.test.mjs раскрывает оболочка (Git Bash, Linux, macOS).
+# В cmd/PowerShell файлы нужно перечислить явно, как в architecture.md.
+if command -v node >/dev/null 2>&1; then
+    echo "pre-commit: node --test tests/frontend/*.test.mjs"
+    node --test tests/frontend/*.test.mjs
+else
+    echo "pre-commit: node не найден, тесты фронта пропускаю"
+fi
+
+echo "pre-commit: все проверки пройдены"
