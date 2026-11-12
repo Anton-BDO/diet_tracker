@@ -36,7 +36,7 @@ export function renderDashboard(root, { store, onLogout }) {
     root.innerHTML = `
       <section class="dashboard-placeholder dashboard-container">
         <div class="dashboard-header">
-          <h1 tabindex="-1" class="dashboard-title" data-user-name></h1>
+          <h1 tabindex="-1" class="dashboard-title"></h1>
           <button type="button" class="button-secondary" data-logout>Выйти</button>
         </div>
         
@@ -46,61 +46,68 @@ export function renderDashboard(root, { store, onLogout }) {
           </h2>
           
           <div class="dashboard-progress-bg">
-            <div class="dashboard-progress-fill ${remaining.kcal < 0 ? 'bg-error' : 'bg-primary'}" style="width: ${Math.min((totals.kcal / norm.kcal) * 100, 100)}%;"></div>
+            <!-- Добавили data-progress и классы для цвета -->
+            <div class="dashboard-progress-fill ${remaining.kcal < 0 ? 'bg-error' : 'bg-primary'}" data-progress></div>
           </div>
 
           <div class="dashboard-macros">
-            <div>
-              <span class="muted macro-label">Белки</span>
-              <div class="macro-value">${totals.protein} г <span class="muted macro-norm">/ ${norm.protein}</span></div>
-            </div>
-            <div>
-              <span class="muted macro-label">Жиры</span>
-              <div class="macro-value">${totals.fat} г <span class="muted macro-norm">/ ${norm.fat}</span></div>
-            </div>
-            <div>
-              <span class="muted macro-label">Углеводы</span>
-              <div class="macro-value">${totals.carbs} г <span class="muted macro-norm">/ ${norm.carbs}</span></div>
-            </div>
-            <div>
-              <span class="muted macro-label">Осталось</span>
-              <div class="macro-value ${remaining.kcal < 0 ? 'text-error' : 'text-ok'}">${remaining.kcal} ккал</div>
-            </div>
+            <div><span class="muted macro-label">Белки</span><div class="macro-value">${totals.protein} г <span class="muted macro-norm">/ ${norm.protein}</span></div></div>
+            <div><span class="muted macro-label">Жиры</span><div class="macro-value">${totals.fat} г <span class="muted macro-norm">/ ${norm.fat}</span></div></div>
+            <div><span class="muted macro-label">Углеводы</span><div class="macro-value">${totals.carbs} г <span class="muted macro-norm">/ ${norm.carbs}</span></div></div>
+            <div><span class="muted macro-label">Осталось</span><div class="macro-value ${remaining.kcal < 0 ? 'text-error' : 'text-ok'}">${remaining.kcal} ккал</div></div>
           </div>
 
           <h3 class="dashboard-meals-title">Что съедено сегодня:</h3>
-          
-          <div class="dashboard-meals-list">
-            ${Object.entries(groupedMeals).map(([mealType, items]) => `
-              <div>
-                <h4 class="meal-type-title">${getMealName(mealType)}</h4>
-                <ul class="meal-items-list">
-                  ${items.map(item => `
-                    <li class="meal-item">
-                      <span class="meal-item-name" data-product-name="${item.product_name}" data-product-grams="${item.grams}"></span>
-                      <strong>${item.kcal} ккал</strong>
-                    </li>
-                  `).join('')}
-                </ul>
-              </div>
-            `).join('')}
-          </div>
+          <div class="dashboard-meals-list" data-meals-list></div>
         </div>
         <button type="button" class="button-primary dashboard-add-btn">+ Добавить еду</button>
       </section>`;
 
-    root.querySelector("[data-user-name]").textContent = `Привет, ${name}!`;
+    root.querySelector(".dashboard-title").textContent = `Привет, ${name}!`;
 
-    root.querySelectorAll("[data-product-name]").forEach(el => {
-      const prodName = el.getAttribute("data-product-name");
-      const grams = el.getAttribute("data-product-grams");
+    const progressBar = root.querySelector("[data-progress]");
+    if (progressBar) {
+      const percent = Math.min((totals.kcal / norm.kcal) * 100, 100);
+      progressBar.style.width = `${percent}%`;
+    }
+
+    const mealsListContainer = root.querySelector("[data-meals-list]");
+    
+    Object.entries(groupedMeals).forEach(([mealType, items]) => {
+      const mealDiv = document.createElement("div");
       
-      el.textContent = `${prodName} `;
-      
-      const span = document.createElement("span");
-      span.className = "muted";
-      span.textContent = `(${grams}г)`;
-      el.appendChild(span);
+      const title = document.createElement("h4");
+      title.className = "meal-type-title";
+      title.textContent = getMealName(mealType); 
+      mealDiv.appendChild(title);
+
+      const ul = document.createElement("ul");
+      ul.className = "meal-items-list";
+
+      items.forEach(item => {
+        const li = document.createElement("li");
+        li.className = "meal-item";
+
+        const spanName = document.createElement("span");
+        spanName.className = "meal-item-name";
+        spanName.textContent = `${item.product_name} `; 
+        
+        const spanGrams = document.createElement("span");
+        spanGrams.className = "muted";
+        spanGrams.textContent = `(${item.grams}г)`;
+        
+        spanName.appendChild(spanGrams);
+
+        const kcalStrong = document.createElement("strong");
+        kcalStrong.textContent = `${item.kcal} ккал`; 
+
+        li.appendChild(spanName);
+        li.appendChild(kcalStrong);
+        ul.appendChild(li);
+      });
+
+      mealDiv.appendChild(ul);
+      mealsListContainer.appendChild(mealDiv);
     });
 
     root.querySelector("[data-logout]").addEventListener("click", async (e) => {
