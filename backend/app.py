@@ -25,11 +25,6 @@ from backend.services.auth import AuthService
 from backend.services.profile import ProfileService
 
 
-from backend.repositories import SessionRepository
-
-main
-
-
 def build_router(client, users, sessions, clock=None):
     """Зарегистрировать все маршруты API с их сервисами."""
     router = Router()
