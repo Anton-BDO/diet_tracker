@@ -16,6 +16,7 @@ def endpoint(mongo_client, static_dir):
         "PORT": "0",
         "STATIC_DIR": str(static_dir),
         "DB_NAME": "diet_tracker_test",
+
     })
     server = build_server(settings, mongo_client)
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -241,6 +242,7 @@ def test_password_not_stored_in_plaintext(endpoint, http, db):
     _register(http, endpoint)
 
     document = db["users"].find_one({"email": "user@example.com"})
+    )
 
     assert document["password_hash"] != VALID_REGISTER["password"]
     assert document["password_hash"].startswith("pbkdf2_sha256$")
