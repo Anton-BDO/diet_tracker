@@ -19,9 +19,15 @@ from backend.api.router import Router
 from backend.api.server import create_server
 from backend.config import load_settings
 from backend.db import create_client, ensure_indexes, get_database
+
 from backend.repositories import SessionRepository, UserRepository
 from backend.services.auth import AuthService
 from backend.services.profile import ProfileService
+
+
+from backend.repositories import SessionRepository
+
+main
 
 
 def build_router(client, users, sessions, clock=None):
