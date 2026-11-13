@@ -25,6 +25,8 @@ from backend.api.handlers.profile import (
     make_get_profile_handler,
     make_update_profile_handler,
 )
+from backend.api.handlers.stats import make_get_calories_stats_handler
+from backend.api.handlers.streak import make_get_streak_handler
 from backend.api.handlers.weight import (
     make_get_weight_history_handler,
     make_log_weight_handler,
@@ -44,6 +46,8 @@ from backend.services.auth import AuthService
 from backend.services.diary import DiaryService
 from backend.services.products import ProductsService
 from backend.services.profile import ProfileService
+from backend.services.stats import CaloriesStatsService
+from backend.services.streak import StreakService
 from backend.services.weight import WeightService
 
 
@@ -61,6 +65,8 @@ def build_router(client, users, sessions, products, entries,
     products_service = ProductsService(products)
     diary_service = DiaryService(entries, products, profile_service)
     weight_service = WeightService(users, weights)
+    streak_service = StreakService(entries, profile_service)
+    stats_service = CaloriesStatsService(entries, profile_service)
 
     router.post(
         "/api/auth/register",
@@ -92,6 +98,11 @@ def build_router(client, users, sessions, products, entries,
         weight_service,
     ))
     router.post("/api/weight", make_log_weight_handler(weight_service))
+    router.get("/api/streak", make_get_streak_handler(streak_service))
+    router.get(
+        "/api/stats/calories",
+        make_get_calories_stats_handler(stats_service),
+    )
     return router
 
 
