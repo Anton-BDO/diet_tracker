@@ -19,3 +19,11 @@ class NotFoundError(DomainError):
 
 class ConflictError(DomainError):
     """Конфликт данных, например email уже занят, 409."""
+
+    def __init__(self, message, field=None):
+        super().__init__(message)
+        self.field = field
+
+
+class UnauthorizedError(DomainError):
+    """Неверные учётные данные, отдаётся как 401."""

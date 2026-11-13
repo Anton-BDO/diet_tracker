@@ -2,6 +2,9 @@
 
 from datetime import datetime, timezone
 
+from pymongo.errors import DuplicateKeyError
+
+from backend.domain.errors import ConflictError
 from backend.domain.models import User
 from backend.repositories._mapping import (
     parse_object_id,
@@ -25,7 +28,10 @@ class UserRepository:
         document = user_to_document(user)
         document.pop("_id", None)
 
-        result = self._collection.insert_one(document)
+        try:
+            result = self._collection.insert_one(document)
+        except DuplicateKeyError:
+            raise ConflictError("Email уже занят", "email") from None
         user.id = str(result.inserted_id)
 
         return user
