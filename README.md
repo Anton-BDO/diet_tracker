@@ -17,11 +17,20 @@ http://localhost:8000/api/health.
 
 ## Запуск без Docker
 
-Нужны Python 3.12+ и запущенная MongoDB на `localhost:27017`.
+Нужны Python 3.12+ и запущенная MongoDB на `localhost:27017`. Базу
+можно поднять отдельно, не запуская приложение в контейнере:
+
+```bash
+docker compose up mongo
+```
+
+Дальше в другом окне терминала:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+.venv\Scripts\activate           # cmd и PowerShell
+# source .venv/Scripts/activate  # Git Bash
+# source .venv/bin/activate      # Linux и macOS
 pip install -r requirements-dev.txt
 python -m backend.app
 ```
@@ -33,9 +42,27 @@ python -m backend.app
 ```bash
 flake8 backend tests scripts     # PEP8
 pytest                           # тесты и покрытие, порог 80%
+node --test tests/frontend/*.test.mjs   # тесты моков фронта, нужен Node.js 20+
 ```
 
 То же самое запускает CI на каждый PR. Красный CI блокирует мерж.
+
+В PowerShell и cmd маску `*.test.mjs` оболочка не раскрывает, файлы
+нужно перечислить явно:
+
+```bash
+node --test tests/frontend/auth.test.mjs tests/frontend/mocks.test.mjs
+```
+
+Те же проверки до каждого коммита запускает git hook
+`.githooks/pre-commit`. Подключается один раз:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Если проверка в хуке падает, коммит не создаётся. Подробности в
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Структура
 
