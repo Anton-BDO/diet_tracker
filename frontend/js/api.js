@@ -1,4 +1,3 @@
-// Единственная точка, через которую фронт ходит на бэкенд.
 import { mockRequest } from "./mocks/index.js";
 
 const API_BASE = "/api";
@@ -66,6 +65,7 @@ export function createApiClient({
     login: body => request("/auth/login", { method: "POST", body }),
     register: body => request("/auth/register", { method: "POST", body }),
     profile: () => request("/profile"),
+    daySummary: (date) => request(`/diary?date=${date}`),
     logout: () => request("/auth/logout", { method: "POST" }),
   };
 }
