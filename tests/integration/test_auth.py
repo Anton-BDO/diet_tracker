@@ -146,7 +146,7 @@ def app_endpoint(mongo_client, static_dir):
     settings = load_settings({
         "HOST": "127.0.0.1", "PORT": "0", "STATIC_DIR": str(static_dir),
     })
-    # Настоящая сборка приложения без отсутствующего пока репозитория.
+    # Настоящая сборка приложения: репозиторий сессий создаётся сам.
     server = build_server(settings, mongo_client)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     host, port = server.server_address
@@ -161,12 +161,12 @@ def test_actual_app_profile_without_token_is_401(app_endpoint, http):
     assert body["error"]["code"] == "unauthorized"
 
 
-def test_actual_app_without_repository_fails_closed(app_endpoint, http):
+def test_actual_app_unknown_token_is_401(app_endpoint, http):
     status, _, body = http(app_endpoint + "/api/profile", headers={
         "Authorization": "Bearer any-token",
     })
-    assert status == 500
-    assert body["error"]["code"] == "internal_error"
+    assert status == 401
+    assert body["error"]["code"] == "unauthorized"
     assert http(app_endpoint + "/api/health")[0] == 200
 
 
