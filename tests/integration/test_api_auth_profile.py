@@ -16,7 +16,6 @@ def endpoint(mongo_client, static_dir):
         "PORT": "0",
         "STATIC_DIR": str(static_dir),
         "DB_NAME": "diet_tracker_test",
-
     })
     server = build_server(settings, mongo_client)
     threading.Thread(target=server.serve_forever, daemon=True).start()

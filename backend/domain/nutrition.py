@@ -121,3 +121,21 @@ def calculate_portion(per_100g: dict, grams: float) -> dict:
         key: _rounded(per_100g[key] * grams / 100, 1)
         for key in _MACRO_KEYS
     }
+
+
+def sum_nutrients(items) -> dict:
+    """Суммировать КБЖУ списка записей без артефактов float."""
+    total = {key: Decimal("0") for key in _MACRO_KEYS}
+    for item in items:
+        for key in _MACRO_KEYS:
+            total[key] += Decimal(str(getattr(item, key)))
+    return {key: _rounded(total[key], 1) for key in _MACRO_KEYS}
+
+
+def remaining_nutrients(norm: dict, totals: dict) -> dict:
+    """Остаток до нормы по каждому нутриенту; может быть отрицательным."""
+    remaining = {}
+    for key in _MACRO_KEYS:
+        value = Decimal(str(norm[key])) - Decimal(str(totals[key]))
+        remaining[key] = _rounded(value, 1)
+    return remaining
