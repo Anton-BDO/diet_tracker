@@ -6,7 +6,11 @@ from backend.api.router import Router
 from backend.app import build_router, build_server
 from backend.config import load_settings
 from backend.domain.errors import ConflictError, NotFoundError, ValidationError
-from backend.repositories import SessionRepository, UserRepository
+from backend.repositories import (
+    ProductRepository,
+    SessionRepository,
+    UserRepository,
+)
 
 
 def _raise(error):
@@ -34,7 +38,8 @@ def base_url(run_server):
 def test_health_with_app_router(run_server, mongo_client, db, http):
     users = UserRepository(db)
     sessions = SessionRepository(db)
-    url = run_server(build_router(mongo_client, users, sessions))
+    products = ProductRepository(db)
+    url = run_server(build_router(mongo_client, users, sessions, products))
     status, headers, body = http(url + "/api/health")
     assert status == 200
     assert body == {"status": "ok", "db": "ok"}

@@ -15,3 +15,16 @@ def user_to_public(user, norm):
         "goal": user.goal,
         "norm": norm,
     }
+
+
+def product_to_public(product):
+    """Публичные поля продукта, id наружу строкой."""
+    return {
+        "id": product.id,
+        "name": product.name,
+        "kcal": product.kcal,
+        "protein": product.protein,
+        "fat": product.fat,
+        "carbs": product.carbs,
+        "owner_id": product.owner_id,
+    }
