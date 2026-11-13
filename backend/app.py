@@ -25,6 +25,10 @@ from backend.api.handlers.profile import (
     make_get_profile_handler,
     make_update_profile_handler,
 )
+from backend.api.handlers.weight import (
+    make_get_weight_history_handler,
+    make_log_weight_handler,
+)
 from backend.api.router import Router
 from backend.api.server import create_server
 from backend.config import load_settings
@@ -34,14 +38,17 @@ from backend.repositories import (
     ProductRepository,
     SessionRepository,
     UserRepository,
+    WeightRepository,
 )
 from backend.services.auth import AuthService
 from backend.services.diary import DiaryService
 from backend.services.products import ProductsService
 from backend.services.profile import ProfileService
+from backend.services.weight import WeightService
 
 
-def build_router(client, users, sessions, products, entries, clock=None):
+def build_router(client, users, sessions, products, entries,
+                 weights, clock=None):
     """Зарегистрировать все маршруты API с их сервисами."""
     router = Router()
     router.get(
@@ -53,6 +60,7 @@ def build_router(client, users, sessions, products, entries, clock=None):
     profile_service = ProfileService(users)
     products_service = ProductsService(products)
     diary_service = DiaryService(entries, products, profile_service)
+    weight_service = WeightService(users, weights)
 
     router.post(
         "/api/auth/register",
@@ -80,6 +88,10 @@ def build_router(client, users, sessions, products, entries, clock=None):
         "/api/diary/{id}",
         make_delete_entry_handler(diary_service),
     )
+    router.get("/api/weight", make_get_weight_history_handler(
+        weight_service,
+    ))
+    router.post("/api/weight", make_log_weight_handler(weight_service))
     return router
 
 
@@ -92,12 +104,14 @@ def build_server(settings, client, *, session_repository=None, clock=None):
     users = UserRepository(db)
     products = ProductRepository(db)
     entries = FoodEntryRepository(db)
+    weights = WeightRepository(db)
     router = build_router(
         client,
         users,
         session_repository,
         products,
         entries,
+        weights,
         clock=clock,
     )
     return create_server(

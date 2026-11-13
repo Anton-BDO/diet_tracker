@@ -2,7 +2,13 @@
 
 from bson import ObjectId
 
-from backend.domain.models import FoodEntry, Product, Session, User
+from backend.domain.models import (
+    FoodEntry,
+    Product,
+    Session,
+    User,
+    WeightLog,
+)
 
 
 def parse_object_id(value: str | ObjectId | None) -> ObjectId | None:
@@ -189,4 +195,30 @@ def session_from_document(document: dict) -> Session:
         user_id=str(document["user_id"]),
         created_at=document["created_at"],
         expires_at=document["expires_at"],
+    )
+
+
+def weight_log_to_document(log: WeightLog) -> dict:
+    """Преобразовать замер веса в документ MongoDB."""
+    document = {
+        "user_id": _required_object_id(log.user_id, "weight_log.user_id"),
+        "weight_kg": float(log.weight_kg),
+        "date": log.date,
+        "created_at": log.created_at,
+    }
+
+    if log.id is not None:
+        document["_id"] = _required_object_id(log.id, "weight_log.id")
+
+    return document
+
+
+def weight_log_from_document(document: dict) -> WeightLog:
+    """Преобразовать документ MongoDB в замер веса."""
+    return WeightLog(
+        id=str(document["_id"]),
+        user_id=str(document["user_id"]),
+        weight_kg=document["weight_kg"],
+        date=document["date"],
+        created_at=document["created_at"],
     )
