@@ -1,0 +1,320 @@
+{
+  "info": {
+    "name": "Diet Tracker API",
+    "description": "Коллекция ко всем эндпоинтам API по docs/openapi.yaml.\n\nСценарий: register или login сохраняет token в переменную, остальные запросы подставляют его в Authorization: Bearer {{token}}. Переменная today вычисляется перед каждым запросом как локальная дата пользователя.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const offset = new Date().getTimezoneOffset() * 60000;",
+          "const local = new Date(Date.now() - offset).toISOString().slice(0, 10);",
+          "pm.collectionVariables.set(\"today\", local);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Служебное",
+      "item": [
+        {
+          "name": "health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/health"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Авторизация",
+      "item": [
+        {
+          "name": "register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set(\"token\", body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"strongpassword123\",\n  \"name\": \"Алексей\",\n  \"sex\": \"male\",\n  \"birth_date\": \"1996-03-15\",\n  \"height_cm\": 180,\n  \"weight_kg\": 80,\n  \"activity\": 1.55,\n  \"goal\": \"lose\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set(\"token\", body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"strongpassword123\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/auth/logout"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Профиль",
+      "item": [
+        {
+          "name": "profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/profile"
+          },
+          "response": []
+        },
+        {
+          "name": "update profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"height_cm\": 182,\n  \"weight_kg\": 79.5,\n  \"activity\": 1.725,\n  \"goal\": \"keep\"\n}"
+            },
+            "url": "{{base_url}}/api/profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Продукты",
+      "item": [
+        {
+          "name": "search products",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/products?q=кур",
+              "host": ["{{base_url}}"],
+              "path": ["api", "products"],
+              "query": [{ "key": "q", "value": "кур" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "create product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.id) { pm.collectionVariables.set(\"product_id\", body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Протеиновый батончик Банан\",\n  \"kcal\": 360,\n  \"protein\": 30,\n  \"fat\": 10,\n  \"carbs\": 35\n}"
+            },
+            "url": "{{base_url}}/api/products"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Дневник",
+      "item": [
+        {
+          "name": "day summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/diary?date={{today}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "diary"],
+              "query": [{ "key": "date", "value": "{{today}}" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "create entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.id) { pm.collectionVariables.set(\"entry_id\", body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"{{product_id}}\",\n  \"grams\": 250,\n  \"meal\": \"lunch\",\n  \"date\": \"{{today}}\"\n}"
+            },
+            "url": "{{base_url}}/api/diary"
+          },
+          "response": []
+        },
+        {
+          "name": "update entry",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grams\": 200,\n  \"meal\": \"dinner\"\n}"
+            },
+            "url": "{{base_url}}/api/diary/{{entry_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "delete entry",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/diary/{{entry_id}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Вес и статистика",
+      "item": [
+        {
+          "name": "weight history",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/weight"
+          },
+          "response": []
+        },
+        {
+          "name": "log weight",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weight_kg\": 79.5,\n  \"date\": \"{{today}}\"\n}"
+            },
+            "url": "{{base_url}}/api/weight"
+          },
+          "response": []
+        },
+        {
+          "name": "streak",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/streak?today={{today}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "streak"],
+              "query": [{ "key": "today", "value": "{{today}}" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "calories stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/stats/calories?days=7&today={{today}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "stats", "calories"],
+              "query": [
+                { "key": "days", "value": "7" },
+                { "key": "today", "value": "{{today}}" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" },
+    { "key": "today", "value": "" },
+    { "key": "product_id", "value": "" },
+    { "key": "entry_id", "value": "" }
+  ]
+}
