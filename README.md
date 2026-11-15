@@ -47,6 +47,17 @@ node --test tests/frontend/*.test.mjs   # тесты моков фронта, н
 
 То же самое запускает CI на каждый PR. Красный CI блокирует мерж.
 
+## Postman
+
+Коллекция запросов ко всем эндпоинтам лежит в
+[docs/postman_collection.json](docs/postman_collection.json). Импортируйте
+её в Postman, поднимите приложение (`docker compose up --build`) и
+пройдите сценарий: `register` или `login` сохранит токен в переменную
+`token`, остальные запросы подставят его в `Authorization: Bearer`
+сами. Переменная `base_url` по умолчанию указывает на
+http://localhost:8000, `today` вычисляется перед каждым запросом как
+локальная дата.
+
 В PowerShell и cmd маску `*.test.mjs` оболочка не раскрывает, файлы
 нужно перечислить явно:
 
