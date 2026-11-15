@@ -77,6 +77,33 @@ def test_seed_products_is_idempotent_and_matches_casefolded_name(tmp_path):
     assert database.products.count_documents({}) == 1
 
 
+def test_seed_products_user_product_does_not_block_global_one(tmp_path):
+    """Пользовательский продукт с тем же названием не мешает системному."""
+    database = mongomock.MongoClient().diet_tracker
+    repository = ProductRepository(database)
+    repository.create(
+        Product(
+            name="Овсяные хлопья",
+            kcal=350,
+            protein=15,
+            fat=5,
+            carbs=50,
+            owner_id="64f1a2b3c4d5e6f708192a3b",
+        )
+    )
+    products_file = _write_products(
+        tmp_path / "products.json",
+        [_product_data()],
+    )
+
+    assert seed_products.seed_products(database, products_file) == (1, 0)
+
+    stored = database.products.find_one(
+        {"name_lower": "овсяные хлопья", "owner_id": None}
+    )
+    assert stored is not None
+
+
 def test_seed_products_returns_zero_counts_for_empty_file(tmp_path):
     database = mongomock.MongoClient().diet_tracker
     products_file = _write_products(tmp_path / "empty.json", [])
