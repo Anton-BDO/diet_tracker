@@ -212,6 +212,41 @@ def test_product_rejects_invalid_nutrients(field, value):
     assert error.value.field == field
 
 
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("kcal", 1000.1),
+        ("kcal", 1e30),
+        ("protein", 100.1),
+        ("fat", 101),
+        ("carbs", 100.0001),
+    ],
+)
+def test_product_rejects_nutrients_above_upper_bound(field, value):
+    values = {
+        "name": "Apple",
+        "kcal": 52,
+        "protein": 0.3,
+        "fat": 0.2,
+        "carbs": 14,
+    }
+    values[field] = value
+
+    with pytest.raises(ValidationError) as error:
+        Product(**values)
+
+    assert error.value.field == field
+
+
+def test_product_accepts_nutrients_at_upper_bound():
+    product = Product(name="Oil", kcal=1000, protein=100, fat=100, carbs=100)
+
+    assert product.kcal == 1000
+    assert product.protein == 100
+    assert product.fat == 100
+    assert product.carbs == 100
+
+
 def test_food_entry_accepts_valid_values_and_kcal_field():
     entry = make_entry()
 

@@ -123,6 +123,8 @@ def test_regex_characters_in_query_are_literal(endpoint, http, seed_products):
 @pytest.mark.parametrize("overrides,field", [
     ({"name": "   "}, "name"),
     ({"kcal": -1}, "kcal"),
+    ({"kcal": 1e30}, "kcal"),
+    ({"protein": 100.1}, "protein"),
     ({"protein": "много"}, "protein"),
     ({"fat": True}, "fat"),
     ({"carbs": float("inf")}, "carbs"),
@@ -148,3 +150,30 @@ def test_create_product_missing_field_is_400(endpoint, http):
 
     assert status == 400
     assert response["error"]["field"] == "fat"
+
+
+def test_product_at_upper_bound_is_consistent_with_diary(endpoint, http):
+    """Продукт на верхней границе КБЖУ создаётся и считается в дневнике."""
+    headers = auth_headers(http, endpoint)
+
+    status, _, product = _create(
+        http, endpoint, headers,
+        name="Граничный продукт",
+        kcal=1000, protein=100, fat=100, carbs=100,
+    )
+    assert status == 201, product
+
+    status, _, entry = http(
+        endpoint + "/api/diary", "POST",
+        headers=headers,
+        body={
+            "product_id": product["id"],
+            "grams": 5000,
+            "meal": "lunch",
+            "date": "2026-10-07",
+        },
+    )
+
+    assert status == 201, entry
+    assert entry["kcal"] == 50000.0
+    assert entry["protein"] == 5000.0

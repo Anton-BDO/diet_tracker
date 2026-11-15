@@ -109,3 +109,11 @@ def test_calculate_portion_rounding_and_limits():
         with pytest.raises(ValidationError) as error:
             calculate_portion(values, grams)
         assert error.value.field == "grams"
+
+
+def test_calculate_portion_rejects_unroundable_extremes():
+    """Огромные значения не должны ронять расчёт необработанным исключением."""
+    huge = {"kcal": 1e30, "protein": 1, "fat": 1, "carbs": 1}
+
+    with pytest.raises(ValidationError):
+        calculate_portion(huge, 100)
