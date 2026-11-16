@@ -26,7 +26,16 @@ function field(mode, name, label, { type = "text", options, attrs = "", wide = f
 
 export function renderLogin(root, { store, mock = false, onSuccess }) {
   root.innerHTML = `
-    <section class="auth-layout" aria-labelledby="auth-title">
+    <section class="auth-shell" aria-labelledby="auth-title">
+      <aside class="brand-panel">
+        <h1>Diet Tracker</h1>
+        <p class="tagline">Питание, норма и прогресс — в одном месте</p>
+        <ul>
+          <li>Персональная норма калорий по вашим параметрам</li>
+          <li>Дневник еды с КБЖУ каждой порции</li>
+          <li>Серия успешных дней и статистика прогресса</li>
+        </ul>
+      </aside>
       <div class="auth-card" data-mode="login">
         <div class="auth-card-heading">
           <h1 id="auth-title" data-auth-title>Вход в аккаунт</h1>
@@ -73,9 +82,10 @@ export function renderLogin(root, { store, mock = false, onSuccess }) {
           </form>
         </div>
         <p class="request-status" role="status" aria-live="polite"></p>
-        <p class="auth-footnote">${mock
-          ? "Демо-режим: аккаунт на сервере не создаётся."
-          : "Параметры профиля нужны для расчёта вашей дневной нормы."}</p>
+        ${mock
+          ? `<p class="alert alert-warning" role="status">Демо-режим: аккаунт на сервере не создаётся</p>`
+          : ""}
+        <p class="auth-footnote">Параметры профиля нужны для расчёта вашей дневной нормы.</p>
       </div>
     </section>`;
 
