@@ -943,18 +943,26 @@ components:
           type: number
           format: float
           minimum: 0
+          maximum: 1000
+          description: ккал на 100 г, не больше 1000
         protein:
           type: number
           format: float
           minimum: 0
+          maximum: 100
+          description: г на 100 г, не больше 100
         fat:
           type: number
           format: float
           minimum: 0
+          maximum: 100
+          description: г на 100 г, не больше 100
         carbs:
           type: number
           format: float
           minimum: 0
+          maximum: 100
+          description: г на 100 г, не больше 100
 
     FoodEntry:
       type: object
