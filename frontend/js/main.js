@@ -3,6 +3,7 @@ import { store } from "./store.js";
 import { renderLogin } from "./views/login.js";
 import { renderDashboard } from "./views/dashboard.js";
 import { renderAddFood } from "./views/add-food.js";
+import { renderProfile } from "./views/profile.js";
 
 const root = document.getElementById("app");
 let cleanup = () => {};
@@ -51,6 +52,10 @@ function renderRoute() {
       entryId: query.get("entry"),
       onDone: () => { location.hash = "/dashboard"; },
     });
+    return;
+  }
+  if (path === "/profile") {
+    cleanup = renderProfile(root, { store });
     return;
   }
   if (path !== "/dashboard") {

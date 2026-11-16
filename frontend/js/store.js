@@ -88,6 +88,12 @@ export function createAuthStore({ client = api, storage = globalThis.localStorag
       await this.loadDashboard();
     },
 
+    async updateProfile(body) {
+      const profile = await client.updateProfile(body);
+      update({ profile });
+      return profile;
+    },
+
     async updateEntry(id, body) {
       await client.updateEntry(id, body);
       await this.loadDashboard();
