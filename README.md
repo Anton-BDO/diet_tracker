@@ -63,7 +63,7 @@ http://localhost:8000, `today` вычисляется перед каждым з
 нужно перечислить явно:
 
 ```bash
-node --test tests/frontend/auth.test.mjs tests/frontend/dashboard.test.mjs tests/frontend/mocks.test.mjs
+node --test tests/frontend/add-food-logic.test.mjs tests/frontend/api-client.test.mjs tests/frontend/auth.test.mjs tests/frontend/dashboard.test.mjs tests/frontend/integration.test.mjs tests/frontend/mocks.test.mjs tests/frontend/weight-profile.test.mjs
 ```
 
 Те же проверки до каждого коммита запускает git hook
