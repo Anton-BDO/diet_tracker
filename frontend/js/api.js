@@ -64,9 +64,42 @@ export function createApiClient({
     health: () => request("/health"),
     login: body => request("/auth/login", { method: "POST", body }),
     register: body => request("/auth/register", { method: "POST", body }),
-    profile: () => request("/profile"),
-    daySummary: (date) => request(`/diary?date=${date}`),
     logout: () => request("/auth/logout", { method: "POST" }),
+    profile: () => request("/profile"),
+    updateProfile: body => request("/profile", { method: "PATCH", body }),
+    products: (q) => request(`/products?${new URLSearchParams({
+      q: String(q ?? ""),
+    })}`),
+    createProduct: body => request("/products", { method: "POST", body }),
+    daySummary: (date) => request(`/diary?date=${date}`),
+    createEntry: body => request("/diary", { method: "POST", body }),
+    updateEntry: (id, body) => request(
+      `/diary/${encodeURIComponent(id)}`,
+      { method: "PATCH", body },
+    ),
+    deleteEntry: (id) => request(
+      `/diary/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
+    weightHistory: ({ from, to } = {}) => {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const suffix = params.size ? `?${params}` : "";
+      return request(`/weight${suffix}`);
+    },
+    logWeight: body => request("/weight", { method: "POST", body }),
+    streak: (today) => {
+      const suffix = today ? `?${new URLSearchParams({ today })}` : "";
+      return request(`/streak${suffix}`);
+    },
+    caloriesStats: ({ days, today } = {}) => {
+      const params = new URLSearchParams();
+      if (days !== undefined) params.set("days", String(days));
+      if (today) params.set("today", today);
+      const suffix = params.size ? `?${params}` : "";
+      return request(`/stats/calories${suffix}`);
+    },
   };
 }
 
