@@ -212,7 +212,13 @@ class User:
 
 @dataclass
 class Product:
-    """Общий продукт или продукт пользователя."""
+    """Общий продукт или продукт пользователя.
+
+    КБЖУ на 100 г ограничены сверху физически возможными
+    значениями: больше 1000 ккал или 100 г нутриента на 100 г
+    продукта быть не может. Границы согласованы с формой
+    создания продукта и docs/openapi.yaml.
+    """
 
     name: str
     kcal: float
@@ -229,13 +235,10 @@ class Product:
         self.name = self.name.strip()
         self.name_lower = self.name.casefold()
 
-        for attr in ("kcal", "protein", "fat", "carbs"):
+        self.kcal = _require_range(self.kcal, "kcal", 0, 1000)
+        for attr in ("protein", "fat", "carbs"):
             value = getattr(self, attr)
-            setattr(
-                self,
-                attr,
-                _require_nonnegative(value, attr),
-            )
+            setattr(self, attr, _require_range(value, attr, 0, 100))
 
         if self.owner_id is not None:
             _require_nonempty(self.owner_id, "owner_id")

@@ -1,7 +1,7 @@
 """Чистые доменные расчёты калорийности и макронутриентов."""
 
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from math import isfinite
 
 from backend.domain.errors import ValidationError
@@ -13,11 +13,21 @@ _MACRO_KEYS = ("kcal", "protein", "fat", "carbs")
 
 
 def _rounded(value, places=0):
-    """Округлить десятичное значение по правилу half-up."""
+    """Округлить десятичное значение по правилу half-up.
+
+    Очень большие значения не помещаются в точность контекста
+    Decimal: превращаем это в понятную ошибку валидации, а не
+    необработанное исключение.
+    """
     quantum = Decimal("1") if places == 0 else Decimal("0.1")
-    rounded = Decimal(str(value)).quantize(
-        quantum, rounding=ROUND_HALF_UP
-    )
+    try:
+        rounded = Decimal(str(value)).quantize(
+            quantum, rounding=ROUND_HALF_UP
+        )
+    except InvalidOperation:
+        raise ValidationError(
+            "Результат расчёта вне допустимого диапазона"
+        ) from None
     return int(rounded) if places == 0 else float(rounded)
 
 
