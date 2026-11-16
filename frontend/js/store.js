@@ -83,6 +83,11 @@ export function createAuthStore({ client = api, storage = globalThis.localStorag
       await this.loadDashboard();
     },
 
+    async createEntry(body) {
+      await client.createEntry(body);
+      await this.loadDashboard();
+    },
+
     async updateEntry(id, body) {
       await client.updateEntry(id, body);
       await this.loadDashboard();

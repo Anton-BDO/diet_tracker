@@ -2,6 +2,7 @@ import { api } from "./api.js";
 import { store } from "./store.js";
 import { renderLogin } from "./views/login.js";
 import { renderDashboard } from "./views/dashboard.js";
+import { renderAddFood } from "./views/add-food.js";
 
 const root = document.getElementById("app");
 let cleanup = () => {};
@@ -26,7 +27,9 @@ async function showApiStatus() {
 function renderRoute() {
   cleanup();
   cleanup = () => {};
-  const path = location.hash.slice(1) || "/dashboard";
+  const raw = location.hash.slice(1) || "/dashboard";
+  const [path, queryString] = raw.split("?");
+  const query = new URLSearchParams(queryString ?? "");
   if (!store.isAuthenticated() && path !== "/login") {
     location.replace("#/login");
     return;
@@ -42,11 +45,19 @@ function renderRoute() {
     });
     return;
   }
+  if (path === "/add-food") {
+    cleanup = renderAddFood(root, {
+      store,
+      entryId: query.get("entry"),
+      onDone: () => { location.hash = "/dashboard"; },
+    });
+    return;
+  }
   if (path !== "/dashboard") {
     location.replace("#/dashboard");
     return;
   }
-    
+
   cleanup = renderDashboard(root, {
     store,
     onLogout: async () => {
