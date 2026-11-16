@@ -2,7 +2,13 @@ import { api } from "./api.js";
 import { localDate } from "./auth-validation.js";
 
 export function createAuthStore({ client = api, storage = globalThis.localStorage } = {}) {
-  let state = Object.freeze({ profile: null, pending: false, error: null, daySummary: null });
+  let state = Object.freeze({
+    profile: null,
+    pending: false,
+    error: null,
+    daySummary: null,
+    streak: null,
+  });
   const listeners = new Set();
   const tokenKey = client.tokenKey ?? "token";
 
@@ -13,7 +19,10 @@ export function createAuthStore({ client = api, storage = globalThis.localStorag
 
   function clearSession() {
     storage?.removeItem(tokenKey);
-    update({ profile: null, pending: false, error: null, daySummary: null });
+    update({
+      profile: null, pending: false, error: null,
+      daySummary: null, streak: null,
+    });
   }
 
   async function authenticate(method, data) {
@@ -56,13 +65,27 @@ export function createAuthStore({ client = api, storage = globalThis.localStorag
     async loadDashboard() {
       update({ pending: true, error: null });
       try {
-        const data = await client.daySummary(localDate()); 
-        update({ daySummary: data });
+        const today = localDate();
+        const [data, streak] = await Promise.all([
+          client.daySummary(today),
+          client.streak(today),
+        ]);
+        update({ daySummary: data, streak });
       } catch (error) {
         update({ error });
       } finally {
         update({ pending: false });
       }
+    },
+
+    async deleteEntry(id) {
+      await client.deleteEntry(id);
+      await this.loadDashboard();
+    },
+
+    async updateEntry(id, body) {
+      await client.updateEntry(id, body);
+      await this.loadDashboard();
     },
 
     async restore() {
