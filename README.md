@@ -18,7 +18,8 @@ http://localhost:8000/api/health.
 ## Запуск без Docker
 
 Нужны Python 3.12+ и запущенная MongoDB на `localhost:27017`. Базу
-можно поднять отдельно, не запуская приложение в контейнере:
+можно поднять отдельно, не запуская приложение в контейнере — Compose
+пробрасывает порт на `127.0.0.1:27017`:
 
 ```bash
 docker compose up mongo
@@ -62,7 +63,7 @@ http://localhost:8000, `today` вычисляется перед каждым з
 нужно перечислить явно:
 
 ```bash
-node --test tests/frontend/auth.test.mjs tests/frontend/mocks.test.mjs
+node --test tests/frontend/auth.test.mjs tests/frontend/dashboard.test.mjs tests/frontend/mocks.test.mjs
 ```
 
 Те же проверки до каждого коммита запускает git hook

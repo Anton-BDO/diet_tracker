@@ -376,7 +376,7 @@ push в `main`. Задача `test` выполняет шаги:
 раскрывается, поэтому в Windows файлы перечисляем явно:
 
 ```
-node --test tests/frontend/auth.test.mjs tests/frontend/mocks.test.mjs
+node --test tests/frontend/auth.test.mjs tests/frontend/dashboard.test.mjs tests/frontend/add-food.test.mjs tests/frontend/profile.test.mjs tests/frontend/mocks.test.mjs
 ```
 
 Ветка `main` защищена правилом репозитория (ruleset):
