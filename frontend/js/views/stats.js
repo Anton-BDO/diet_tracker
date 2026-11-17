@@ -47,6 +47,8 @@ export function renderStats(root) {
   const screen = el("section", "dashboard-container");
   screen.setAttribute("aria-labelledby", "stats-title");
   screen.appendChild(el("h1", "screen-title", "Статистика"));
+  let caloriesTableOpen = false;
+  let weightTableOpen = false;
 
   const caloriesBox = el("div", "chart-box");
   caloriesBox.appendChild(el("h2", "dashboard-meals-title",
@@ -54,11 +56,14 @@ export function renderStats(root) {
   screen.appendChild(caloriesBox);
   const caloriesTableBox = el("div");
   screen.appendChild(caloriesTableBox);
+  const grid = el("div", "stats-grid");
+  screen.insertBefore(grid, caloriesTableBox);
 
   const weightBox = el("div", "chart-box");
   weightBox.appendChild(el("h2", "dashboard-meals-title", "Динамика веса"));
   screen.appendChild(weightBox);
   const weightTableBox = el("div");
+  grid.append(caloriesBox, weightBox);
   screen.appendChild(weightTableBox);
   screen.appendChild(renderNav("stats"));
   root.replaceChildren(screen);
@@ -87,7 +92,21 @@ export function renderStats(root) {
       });
       redraws.push(redraw);
       requestAnimationFrame(redraw);
-      caloriesTableBox.replaceChildren(caloriesTable(stats.days));
+      caloriesTableBox.replaceChildren();
+      const caloriesToggle = el("button", "button-secondary table-toggle",
+        caloriesTableOpen ? "Скрыть данные по дням" : "Показать данные по дням");
+      caloriesToggle.setAttribute("aria-expanded", String(caloriesTableOpen));
+      caloriesToggle.addEventListener("click", () => {
+        caloriesTableOpen = !caloriesTableOpen;
+        loadStats();
+      });
+      caloriesTableBox.appendChild(caloriesToggle);
+      if (caloriesTableOpen) caloriesTableBox.appendChild(caloriesTable(stats.days));
+      if (!stats.days.some(day => day.kcal > 0)) {
+        caloriesBox.appendChild(el(
+          "p", "muted", "За этот период пока нет записей",
+        ));
+      }
     } catch (error) {
       caloriesBox.querySelector(".muted")?.remove();
       caloriesBox.appendChild(el(
@@ -110,7 +129,16 @@ export function renderStats(root) {
       const redraw = () => drawWeightChart(canvas, points);
       redraws.push(redraw);
       requestAnimationFrame(redraw);
-      weightTableBox.replaceChildren(weightTable(points));
+      weightTableBox.replaceChildren();
+      const weightToggle = el("button", "button-secondary table-toggle",
+        weightTableOpen ? "Скрыть историю" : "Показать всю историю");
+      weightToggle.setAttribute("aria-expanded", String(weightTableOpen));
+      weightToggle.addEventListener("click", () => {
+        weightTableOpen = !weightTableOpen;
+        loadWeight();
+      });
+      weightTableBox.appendChild(weightToggle);
+      if (weightTableOpen) weightTableBox.appendChild(weightTable(points));
     } catch (error) {
       weightBox.appendChild(el(
         "p", "form-error", error.message || "Не удалось загрузить вес",

@@ -53,16 +53,29 @@ export function renderProfile(root, { store }) {
   infoCard.appendChild(row("Пол", profile.sex === "male" ? "Мужской" : "Женский"));
   infoCard.appendChild(row("Дата рождения", profile.birth_date));
   const normCard = el("div", "auth-card dashboard-card");
-  normCard.appendChild(el(
-    "h2", "dashboard-meals-title",
-    `Норма: ${profile.norm.kcal} ккал · Б ${profile.norm.protein} · Ж ${profile.norm.fat} · У ${profile.norm.carbs}`,
-  ));
-  screen.append(infoCard, normCard);
+  normCard.appendChild(el("h2", "dashboard-meals-title", "Текущая норма"));
+  const normValues = el("div", "norm-values");
+  for (const [label, value] of [
+    ["Ккал", profile.norm.kcal],
+    ["Белки, г", profile.norm.protein],
+    ["Жиры, г", profile.norm.fat],
+    ["Углеводы, г", profile.norm.carbs],
+  ]) {
+    const cell = el("div");
+    cell.appendChild(el("div", "muted macro-label", label));
+    cell.appendChild(el("div", "macro-value", String(value)));
+    normValues.appendChild(cell);
+  }
+  normCard.appendChild(normValues);
+  const leftColumn = el("div", "profile-grid-left");
+  leftColumn.append(infoCard, normCard);
+  screen.appendChild(leftColumn);
 
   const editCard = el("div", "auth-card dashboard-card");
   editCard.appendChild(el("h2", "dashboard-meals-title", "Изменить параметры"));
   const form = el("form");
   form.noValidate = true;
+  form.className = "profile-form-grid";
   const errorBox = el("p", "alert alert-error");
   errorBox.setAttribute("role", "alert");
   errorBox.hidden = true;
@@ -97,13 +110,16 @@ export function renderProfile(root, { store }) {
   const submit = el("button", "button-primary", "Сохранить");
   submit.type = "submit";
   form.append(heightLabel, weightLabel, activity.label, goal.label, submit);
+  [heightLabel, weightLabel, activity.label, goal.label].forEach(node => node.classList.add("form-block"));
   editCard.appendChild(form);
-  screen.appendChild(editCard);
+
+  const rightColumn = el("div", "profile-grid-right");
 
   const weightCard = el("div", "auth-card dashboard-card");
   weightCard.appendChild(el("h2", "dashboard-meals-title", "Журнал веса"));
   const weightForm = el("form");
   weightForm.noValidate = true;
+  weightForm.className = "weight-inline";
   const weightError = el("p", "alert alert-error");
   weightError.setAttribute("role", "alert");
   weightError.hidden = true;
@@ -115,15 +131,22 @@ export function renderProfile(root, { store }) {
   logInput.value = profile.weight_kg;
   const logLabel = el("label", "", "Вес, кг");
   logLabel.appendChild(logInput);
+  logLabel.classList.add("form-block");
   const logButton = el("button", "button-primary", "Записать вес");
   logButton.type = "submit";
-  weightForm.append(weightError, logLabel, logButton);
+  weightCard.appendChild(weightError);
+  weightForm.append(logLabel, logButton);
   weightCard.appendChild(weightForm);
   const history = el("div");
   weightCard.appendChild(history);
-  screen.appendChild(weightCard);
+  rightColumn.append(editCard, weightCard);
+  const grid = el("div", "profile-grid");
+  grid.append(leftColumn, rightColumn);
+  screen.appendChild(grid);
   screen.appendChild(renderNav("profile"));
   root.replaceChildren(screen);
+
+  let historyExpanded = false;
 
   async function loadHistory() {
     history.replaceChildren(el("p", "muted", "Загрузка…"));
@@ -139,13 +162,24 @@ export function renderProfile(root, { store }) {
       head.appendChild(el("th", "", "Дата"));
       head.appendChild(el("th", "", "Вес, кг"));
       table.appendChild(head);
-      for (const log of logs) {
+      const shown = historyExpanded ? logs : logs.slice(-4);
+      for (const log of shown) {
         const tr = el("tr");
         tr.appendChild(el("td", "", log.date));
         tr.appendChild(el("td", "", String(log.weight_kg)));
         table.appendChild(tr);
       }
       history.appendChild(table);
+      if (logs.length > 4) {
+        const toggle = el("button", "button-secondary table-toggle",
+          historyExpanded ? "Скрыть историю" : "Показать всю историю");
+        toggle.setAttribute("aria-expanded", String(historyExpanded));
+        toggle.addEventListener("click", () => {
+          historyExpanded = !historyExpanded;
+          loadHistory();
+        });
+        history.appendChild(toggle);
+      }
     } catch (error) {
       history.replaceChildren(el(
         "p", "form-error", error.message || "Не удалось загрузить историю",

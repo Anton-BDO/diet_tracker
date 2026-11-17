@@ -445,3 +445,37 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---------- Плотность и сетки (п.17-23 ТЗ) ---------- */
+.profile-grid, .stats-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.dash-top { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.profile-form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.norm-values { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 480px) {
+  .dashboard-macros { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 768px) {
+  .dash-top { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .dash-top .dashboard-card { margin-bottom: 0; }
+}
+@media (min-width: 1024px) {
+  .profile-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .norm-values { grid-template-columns: repeat(4, 1fr); }
+  .auth-card { padding: 20px; }
+  #app { padding-top: 16px; }
+  .dashboard-card, .chart-box, .auth-card { margin-bottom: 12px; }
+}
+.form-block label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
+.form-block input, .form-block select {
+  width: 100%; min-width: 0; height: 48px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-input); color: var(--text);
+  padding: 10px 12px; font-size: 14px;
+}
+.weight-inline { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 1024px) {
+  .weight-inline { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+}
+.table-toggle { margin-top: 8px; }

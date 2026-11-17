@@ -135,7 +135,6 @@ function renderContent(root, state, actions) {
     macros.appendChild(cell);
   }
   caloriesCard.appendChild(macros);
-  screen.appendChild(caloriesCard);
 
   const streakCard = el("div", "auth-card dashboard-card streak-card");
   const streakText = el("div");
@@ -155,7 +154,9 @@ function renderContent(root, state, actions) {
     isSuccess ? "Сегодняшний день в пределах нормы" : "Сегодняшний день вне нормы",
   );
   streakCard.append(streakText, flame);
-  screen.appendChild(streakCard);
+  const dashTop = el("div", "dash-top");
+  dashTop.append(caloriesCard, streakCard);
+  screen.appendChild(dashTop);
 
   screen.appendChild(el("h2", "dashboard-meals-title", "Что съедено сегодня"));
   screen.appendChild(mealList(entries, actions));
