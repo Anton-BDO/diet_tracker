@@ -22,7 +22,7 @@ export function drawCaloriesChart(canvas, { days, normKcal }) {
   const accent = cssColor("--accent");
   const danger = cssColor("--danger");
   const muted = cssColor("--muted");
-  const border = cssColor("--border");
+  const grid = cssColor("--chart-grid");
   const pad = { top: 12, right: 8, bottom: 22, left: 8 };
   const plotW = width - pad.left - pad.right;
   const plotH = height - pad.top - pad.bottom;
@@ -31,7 +31,7 @@ export function drawCaloriesChart(canvas, { days, normKcal }) {
   const barWidth = Math.max(8, Math.min(28, stepX * 0.6));
 
   // Пунктир нормы
-  context.strokeStyle = border;
+  context.strokeStyle = grid;
   context.setLineDash([4, 4]);
   context.beginPath();
   const normY = pad.top + plotH * (1 - normKcal / maxValue);
@@ -44,7 +44,7 @@ export function drawCaloriesChart(canvas, { days, normKcal }) {
     const barH = plotH * (day.kcal / maxValue);
     const x = pad.left + stepX * index + (stepX - barWidth) / 2;
     const y = pad.top + plotH - barH;
-    context.fillStyle = day.kcal === 0 ? border
+    context.fillStyle = day.kcal === 0 ? grid
       : day.is_success ? accent : danger;
     context.beginPath();
     context.roundRect(x, y, barWidth, Math.max(barH, 2), 3);

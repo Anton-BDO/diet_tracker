@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { store } from "./store.js";
+import { createThemeManager } from "./theme.js";
 import { renderLogin } from "./views/login.js";
 import { renderDashboard } from "./views/dashboard.js";
 import { renderAddFood } from "./views/add-food.js";
@@ -9,22 +10,24 @@ import { renderStats } from "./views/stats.js";
 const root = document.getElementById("app");
 let cleanup = () => {};
 
-async function showApiStatus() {
-  const status = document.getElementById("api-status");
-  if (api.mock) {
-    status.textContent = "Демо-режим";
-    status.classList.add("demo");
-    return;
-  }
-  try {
-    await api.health();
-    status.textContent = "Сервер подключён";
-    status.classList.add("ok");
-  } catch {
-    status.textContent = "API недоступен";
-    status.classList.add("error");
-  }
-}
+const themeManager = createThemeManager({
+  onChange: (theme) => {
+    const button = document.getElementById("theme-toggle");
+    if (!button) return;
+    button.setAttribute(
+      "aria-label",
+      theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему",
+    );
+    button.querySelector("[data-theme-icon]").textContent =
+      theme === "dark" ? "☀️" : "🌙";
+    // Сообщаем экранам (статистика перерисует графики новыми цветами).
+    globalThis.dispatchEvent?.(new CustomEvent("themechange", {
+      detail: { theme },
+    }));
+  },
+});
+document.getElementById("theme-toggle")
+  ?.addEventListener("click", () => themeManager.toggle());
 
 function renderRoute() {
   cleanup();
@@ -88,7 +91,6 @@ window.addEventListener("auth:expired", () => {
 });
 
 async function start() {
-  showApiStatus();
   await store.restore();
   window.addEventListener("hashchange", renderRoute);
   renderRoute();

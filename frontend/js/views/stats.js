@@ -65,7 +65,9 @@ export function renderStats(root) {
 
   const redraws = [];
   const onResize = () => redraws.forEach(redraw => redraw());
+  const onThemeChange = () => redraws.forEach(redraw => redraw());
   globalThis.addEventListener("resize", onResize);
+  globalThis.addEventListener("themechange", onThemeChange);
 
   async function loadStats() {
     caloriesBox.appendChild(el("p", "muted", "Загрузка…"));
@@ -121,5 +123,6 @@ export function renderStats(root) {
 
   return () => {
     globalThis.removeEventListener("resize", onResize);
+    globalThis.removeEventListener("themechange", onThemeChange);
   };
 }

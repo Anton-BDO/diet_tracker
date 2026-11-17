@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0f1419">
   <title>Трекер диеты</title>
+  <script>
+    // Применяем тему до отрисовки, чтобы не было вспышки чужой темы.
+    (function () {
+      var theme = null;
+      try {
+        theme = localStorage.getItem("diet_tracker_theme");
+      } catch (error) { theme = null; }
+      if (theme !== "light" && theme !== "dark") {
+        theme = (window.matchMedia
+          && window.matchMedia("(prefers-color-scheme: dark)").matches)
+          ? "dark" : "light";
+      }
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+    })();
+  </script>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -12,7 +28,10 @@
     <a class="brand" href="#/dashboard" aria-label="Трекер диеты — главная">
       Трекер диеты
     </a>
-    <span id="api-status" class="status" role="status">Проверяем сервер…</span>
+    <button type="button" id="theme-toggle" class="theme-toggle"
+      aria-label="Включить светлую тему">
+      <span aria-hidden="true" data-theme-icon>🌙</span>
+    </button>
   </header>
   <main id="app"><p class="loading-message" role="status">Загрузка…</p></main>
   <noscript>Для работы дневника нужно включить JavaScript.</noscript>
