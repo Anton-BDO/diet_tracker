@@ -87,7 +87,16 @@ export function renderLogin(root, { store, mock = false, onSuccess }) {
           : ""}
         <p class="auth-footnote">Параметры профиля нужны для расчёта вашей дневной нормы.</p>
       </div>
-    </section>`;
+    </section>
+    <footer class="site-disclaimer" role="note">
+      <p class="site-disclaimer-title">Учебный проект — не публичный сервис</p>
+      <ul>
+        <li>Сервис создан студентом для обучения и сдачи учебного проекта.</li>
+        <li>Не указывайте реальные персональные данные: email, пароли, имя, параметры тела.</li>
+        <li>Проект может обновляться, перезапускаться и полностью удалять все данные в любой момент без предупреждения.</li>
+        <li>Автор не несёт ответственности за сохранность данных и бесперебойную работу сервиса.</li>
+      </ul>
+    </footer>`;
 
   const forms = {
     login: root.querySelector("#login-form"),
