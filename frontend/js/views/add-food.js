@@ -91,6 +91,7 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
 
   const form = el("form");
   form.noValidate = true;
+  form.className = "stacked-form";
   const errorBox = el("p", "alert alert-error");
   errorBox.setAttribute("role", "alert");
   errorBox.hidden = true;
@@ -107,21 +108,58 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
       `Продукт: ${editing.product_name} (${editing.kcal} ккал)`,
     ));
   } else {
-    const searchLabel = el("label", "", "Поиск продукта");
+    const searchLabel = el("label", "", "Продукт или блюдо");
     searchLabel.htmlFor = "product-search";
     const search = el("input");
     search.id = "product-search";
     search.type = "search";
-    search.placeholder = "Например, куриная грудка";
+    search.placeholder = "Например, куриная грудка или гречка";
     const results = el("ul", "product-results");
     results.setAttribute("role", "listbox");
     results.setAttribute("aria-label", "Найденные продукты");
-    form.append(searchLabel, search, results);
+    const searchHint = el(
+      "p", "muted", "Начните вводить название продукта или блюда",
+    );
+    const selectedCard = el("div", "selected-product");
+    selectedCard.hidden = true;
+    form.append(searchLabel, search, searchHint, results, selectedCard);
+
+    let resultsCollapsed = false;
+
+    function showSelected(product) {
+      selectedCard.replaceChildren();
+      if (!product) {
+        selectedCard.hidden = true;
+        return;
+      }
+      selectedCard.hidden = false;
+      resultsCollapsed = true;
+      results.hidden = true;
+      const badge = el("span", "selected-badge", "Выбрано");
+      const name = el("strong", "", product.name);
+      const nutrients = el(
+        "span", "muted",
+        `${product.kcal} ккал · Б ${product.protein} г · Ж ${product.fat} г · У ${product.carbs} г на 100 г`,
+      );
+      const change = el("button", "button-secondary", "Изменить продукт");
+      change.addEventListener("click", () => {
+        selected = null;
+        selectedCard.hidden = true;
+        results.hidden = false;
+        resultsCollapsed = false;
+        search.focus();
+        updatePreview();
+      });
+      selectedCard.append(badge, name, nutrients, change);
+    }
 
     const renderResults = (products) => {
       results.replaceChildren();
+      searchHint.hidden = true;
       if (!products.length) {
-        results.appendChild(el("li", "muted", "Ничего не найдено"));
+        results.appendChild(el(
+          "li", "muted", "Ничего не найдено. Можно добавить свой продукт",
+        ));
         return;
       }
       for (const product of products) {
@@ -136,9 +174,7 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
         button.appendChild(name);
         button.addEventListener("click", () => {
           selected = product;
-          results.querySelectorAll("button")
-            .forEach(node => node.classList.remove("selected"));
-          button.classList.add("selected");
+          showSelected(product);
           updatePreview();
         });
         item.appendChild(button);
@@ -150,8 +186,14 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
       const id = ++requestId;
       if (!query.trim()) {
         results.replaceChildren();
+        searchHint.hidden = false;
         return;
       }
+      searchHint.hidden = true;
+      results.hidden = false;
+      resultsCollapsed = false;
+      results.replaceChildren();
+      results.appendChild(el("li", "muted", "Ищем продукты…"));
       try {
         const products = await api.products(query.trim());
         // Старый ответ не должен перезаписывать более новый запрос.
@@ -173,6 +215,16 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
       "Добавить свой продукт");
     const customForm = el("div");
     customForm.hidden = true;
+    customForm.id = "custom-product-form";
+    customToggle.setAttribute("aria-expanded", "false");
+    customToggle.setAttribute("aria-controls", customForm.id);
+    customToggle.addEventListener("click", () => {
+      customForm.hidden = !customForm.hidden;
+      customToggle.setAttribute(
+        "aria-expanded", String(!customForm.hidden));
+      customToggle.textContent = customForm.hidden
+        ? "Добавить свой продукт" : "Скрыть форму продукта";
+    });
     const customFields = {};
     for (const [name, label, step] of [
       ["name", "Название", null],
@@ -183,6 +235,8 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
     ]) {
       const fieldLabel = el("label", "", label);
       const input = el("input");
+      input.id = `custom-${name}`;
+      fieldLabel.htmlFor = input.id;
       input.name = name;
       input.type = step ? "number" : "text";
       if (step) {
@@ -194,24 +248,35 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
     }
     const customSubmit = el("button", "button-primary", "Сохранить продукт");
     customForm.appendChild(customSubmit);
-    customToggle.addEventListener("click", () => {
-      customForm.hidden = !customForm.hidden;
-    });
     customSubmit.addEventListener("click", async (event) => {
       event.preventDefault();
       errorBox.hidden = true;
       customSubmit.disabled = true;
       try {
+        const raw = {
+          name: customFields.name.value.trim(),
+          kcal: customFields.kcal.value.trim(),
+          protein: customFields.protein.value.trim(),
+          fat: customFields.fat.value.trim(),
+          carbs: customFields.carbs.value.trim(),
+        };
+        const emptyField = Object.keys(raw).find(key => !raw[key]);
+        if (emptyField) {
+          throw new Error("Заполните все поля продукта");
+        }
         const body = {
-          name: customFields.name.value,
-          kcal: Number(customFields.kcal.value),
-          protein: Number(customFields.protein.value),
-          fat: Number(customFields.fat.value),
-          carbs: Number(customFields.carbs.value),
+          name: raw.name,
+          kcal: Number(raw.kcal),
+          protein: Number(raw.protein),
+          fat: Number(raw.fat),
+          carbs: Number(raw.carbs),
         };
         selected = await api.createProduct(body);
         customForm.hidden = true;
+        customToggle.setAttribute("aria-expanded", "false");
+        customToggle.textContent = "Добавить свой продукт";
         search.value = selected.name;
+        showSelected(selected);
         updatePreview();
       } catch (error) {
         errorBox.textContent = error.message || "Не удалось сохранить продукт";
@@ -223,7 +288,7 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
     form.append(customToggle, customForm);
   }
 
-  const gramsLabel = el("label", "", "Граммы");
+  const gramsLabel = el("label", "", "Количество, г");
   const grams = el("input");
   grams.type = "number";
   grams.min = String(GRAMS_MIN);
@@ -232,7 +297,7 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
   grams.value = editing ? editing.grams : 100;
   grams.id = "entry-grams";
   gramsLabel.htmlFor = grams.id;
-  gramsLabel.prepend(grams);
+  gramsLabel.appendChild(grams);
 
   const mealLabel = el("label", "", "Приём пищи");
   const meal = el("select");
@@ -244,7 +309,7 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
   meal.value = editing ? editing.meal : "lunch";
   meal.id = "entry-meal";
   mealLabel.htmlFor = meal.id;
-  mealLabel.prepend(meal);
+  mealLabel.appendChild(meal);
 
   form.append(gramsLabel, mealLabel);
 
@@ -305,6 +370,7 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
       return;
     }
     submit.disabled = true;
+    submit.textContent = editing ? "Сохраняем…" : "Добавляем…";
     try {
       if (editing) {
         await store.updateEntry(
@@ -324,6 +390,7 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
       errorBox.textContent = error.message || "Не удалось сохранить запись";
       errorBox.hidden = false;
       submit.disabled = false;
+      submit.textContent = editing ? "Сохранить изменения" : "Добавить в дневник";
     }
   });
 

@@ -47,6 +47,8 @@ export function renderStats(root) {
   const screen = el("section", "dashboard-container");
   screen.setAttribute("aria-labelledby", "stats-title");
   screen.appendChild(el("h1", "screen-title", "Статистика"));
+  let caloriesTableOpen = false;
+  let weightTableOpen = false;
 
   const caloriesBox = el("div", "chart-box");
   caloriesBox.appendChild(el("h2", "dashboard-meals-title",
@@ -54,22 +56,29 @@ export function renderStats(root) {
   screen.appendChild(caloriesBox);
   const caloriesTableBox = el("div");
   screen.appendChild(caloriesTableBox);
+  const grid = el("div", "stats-grid");
+  screen.insertBefore(grid, caloriesTableBox);
 
   const weightBox = el("div", "chart-box");
   weightBox.appendChild(el("h2", "dashboard-meals-title", "Динамика веса"));
   screen.appendChild(weightBox);
   const weightTableBox = el("div");
+  grid.append(caloriesBox, weightBox);
   screen.appendChild(weightTableBox);
   screen.appendChild(renderNav("stats"));
   root.replaceChildren(screen);
 
-  const redraws = [];
-  const onResize = () => redraws.forEach(redraw => redraw());
-  const onThemeChange = () => redraws.forEach(redraw => redraw());
+  let redrawCalories = () => {};
+  let redrawWeight = () => {};
+  const onResize = () => { redrawCalories(); redrawWeight(); };
+  const onThemeChange = () => { redrawCalories(); redrawWeight(); };
   globalThis.addEventListener("resize", onResize);
   globalThis.addEventListener("themechange", onThemeChange);
 
   async function loadStats() {
+    for (const node of [...caloriesBox.children]) {
+      if (node.tagName !== "H2") node.remove();
+    }
     caloriesBox.appendChild(el("p", "muted", "Загрузка…"));
     try {
       const stats = await api.caloriesStats({
@@ -82,12 +91,25 @@ export function renderStats(root) {
       canvas.setAttribute("role", "img");
       canvas.setAttribute("aria-label", "Столбчатый график калорий по дням");
       caloriesBox.appendChild(canvas);
-      const redraw = () => drawCaloriesChart(canvas, {
+      redrawCalories = () => drawCaloriesChart(canvas, {
         days: stats.days, normKcal: stats.norm_kcal,
       });
-      redraws.push(redraw);
-      requestAnimationFrame(redraw);
-      caloriesTableBox.replaceChildren(caloriesTable(stats.days));
+      requestAnimationFrame(redrawCalories);
+      caloriesTableBox.replaceChildren();
+      const caloriesToggle = el("button", "button-secondary table-toggle",
+        caloriesTableOpen ? "Скрыть данные по дням" : "Показать данные по дням");
+      caloriesToggle.setAttribute("aria-expanded", String(caloriesTableOpen));
+      caloriesToggle.addEventListener("click", () => {
+        caloriesTableOpen = !caloriesTableOpen;
+        loadStats();
+      });
+      caloriesTableBox.appendChild(caloriesToggle);
+      if (caloriesTableOpen) caloriesTableBox.appendChild(caloriesTable(stats.days));
+      if (!stats.days.some(day => day.kcal > 0)) {
+        caloriesBox.appendChild(el(
+          "p", "muted", "За этот период пока нет записей",
+        ));
+      }
     } catch (error) {
       caloriesBox.querySelector(".muted")?.remove();
       caloriesBox.appendChild(el(
@@ -97,8 +119,12 @@ export function renderStats(root) {
   }
 
   async function loadWeight() {
+    for (const node of [...weightBox.children]) {
+      if (node.tagName !== "H2") node.remove();
+    }
     try {
       const points = await api.weightHistory();
+      redrawWeight = () => {};
       if (!points.length) {
         weightBox.appendChild(el("p", "muted", "Замеров веса пока нет"));
         return;
@@ -107,10 +133,18 @@ export function renderStats(root) {
       canvas.setAttribute("role", "img");
       canvas.setAttribute("aria-label", "Линейный график веса");
       weightBox.appendChild(canvas);
-      const redraw = () => drawWeightChart(canvas, points);
-      redraws.push(redraw);
-      requestAnimationFrame(redraw);
-      weightTableBox.replaceChildren(weightTable(points));
+      redrawWeight = () => drawWeightChart(canvas, points);
+      requestAnimationFrame(redrawWeight);
+      weightTableBox.replaceChildren();
+      const weightToggle = el("button", "button-secondary table-toggle",
+        weightTableOpen ? "Скрыть историю" : "Показать всю историю");
+      weightToggle.setAttribute("aria-expanded", String(weightTableOpen));
+      weightToggle.addEventListener("click", () => {
+        weightTableOpen = !weightTableOpen;
+        loadWeight();
+      });
+      weightTableBox.appendChild(weightToggle);
+      if (weightTableOpen) weightTableBox.appendChild(weightTable(points));
     } catch (error) {
       weightBox.appendChild(el(
         "p", "form-error", error.message || "Не удалось загрузить вес",

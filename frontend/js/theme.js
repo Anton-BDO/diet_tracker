@@ -36,7 +36,7 @@ export function createThemeManager({
   }
 
   let theme = resolveInitialTheme(saved, Boolean(media?.matches));
-  let manual = saved !== null;
+  let manual = THEMES.includes(saved);
 
   function apply() {
     if (root) {

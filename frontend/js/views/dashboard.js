@@ -41,7 +41,7 @@ function mealList(entries, actions) {
   if (!entries.length) {
     const empty = el("div", "empty-state");
     empty.appendChild(el("p", "", "Пока ничего не добавлено"));
-    const cta = el("button", "button-primary", "Добавить еду");
+    const cta = el("button", "button-primary", "Добавить первую запись");
     cta.addEventListener("click", () => { location.hash = "/add-food"; });
     empty.appendChild(cta);
     container.appendChild(empty);
@@ -51,7 +51,9 @@ function mealList(entries, actions) {
   for (const entry of entries) {
     (groups[entry.meal] ??= []).push(entry);
   }
-  for (const [meal, items] of Object.entries(groups)) {
+  for (const meal of ["breakfast", "lunch", "dinner", "snack"]) {
+    const items = groups[meal];
+    if (!items) continue;
     const group = el("div");
     group.appendChild(el("h4", "meal-type-title", MEAL_NAMES[meal] ?? meal));
     const list = el("ul", "meal-items-list");
@@ -135,7 +137,6 @@ function renderContent(root, state, actions) {
     macros.appendChild(cell);
   }
   caloriesCard.appendChild(macros);
-  screen.appendChild(caloriesCard);
 
   const streakCard = el("div", "auth-card dashboard-card streak-card");
   const streakText = el("div");
@@ -155,14 +156,12 @@ function renderContent(root, state, actions) {
     isSuccess ? "Сегодняшний день в пределах нормы" : "Сегодняшний день вне нормы",
   );
   streakCard.append(streakText, flame);
-  screen.appendChild(streakCard);
+  const dashTop = el("div", "dash-top");
+  dashTop.append(caloriesCard, streakCard);
+  screen.appendChild(dashTop);
 
   screen.appendChild(el("h2", "dashboard-meals-title", "Что съедено сегодня"));
   screen.appendChild(mealList(entries, actions));
-
-  const add = el("button", "button-primary dashboard-add-btn", "+ Добавить еду");
-  add.addEventListener("click", () => { location.hash = "/add-food"; });
-  screen.appendChild(add);
 
   screen.appendChild(renderNav("dashboard"));
   root.replaceChildren(screen);

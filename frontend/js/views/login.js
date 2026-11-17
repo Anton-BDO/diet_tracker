@@ -132,6 +132,7 @@ export function renderLogin(root, { store, mock = false, onSuccess }) {
       root.querySelector(`#${tab.dataset.authTab}-panel`).hidden = !selected;
     });
     root.querySelector(".auth-card").dataset.mode = mode;
+    root.querySelector(".auth-shell").dataset.mode = mode;
     root.querySelector("[data-auth-title]").textContent = mode === "login"
       ? "Вход в аккаунт" : "Регистрация";
   }

@@ -376,7 +376,7 @@ push в `main`. Задача `test` выполняет шаги:
 раскрывается, поэтому в Windows файлы перечисляем явно:
 
 ```
-node --test tests/frontend/auth.test.mjs tests/frontend/dashboard.test.mjs tests/frontend/add-food.test.mjs tests/frontend/profile.test.mjs tests/frontend/mocks.test.mjs
+node --test tests/frontend/add-food-logic.test.mjs tests/frontend/api-client.test.mjs tests/frontend/auth.test.mjs tests/frontend/dashboard.test.mjs tests/frontend/integration.test.mjs tests/frontend/mocks.test.mjs tests/frontend/theme.test.mjs tests/frontend/weight-profile.test.mjs
 ```
 
 Ветка `main` защищена правилом репозитория (ruleset):
@@ -399,8 +399,10 @@ node --test tests/frontend/auth.test.mjs tests/frontend/dashboard.test.mjs tests
     healthcheck базы прошёл.
 - Настройки задаются переменными окружения `MONGO_URI`, `DB_NAME`,
   `HOST`, `PORT` и `CORS_ORIGIN`, пример в `.env.example`.
-- `python scripts/seed_products.py` записывает стартовый справочник
-  продуктов в коллекцию `products`.
+- Сервис `seed` автоматически записывает стартовый справочник
+  продуктов после того, как MongoDB прошла healthcheck; загрузка
+  идемпотентна. Вручную: `python scripts/seed_products.py` внутри
+  контейнера `app` или на хосте с локальной MongoDB.
 - Без Docker нужна запущенная локально MongoDB, затем
   `pip install -r requirements.txt` и `python -m backend.app`.
 

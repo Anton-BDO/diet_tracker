@@ -215,7 +215,7 @@ a { color: inherit; }
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
-  color: #06130b;
+  color: var(--on-accent);
   font-size: 14px;
   font-weight: 600;
 }
@@ -356,6 +356,9 @@ a { color: inherit; }
     grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
     gap: 32px;
   }
+  .auth-shell[data-mode="register"] {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 680px);
+  }
   .brand-panel { text-align: left; }
   .brand-panel ul { display: grid; }
 }
@@ -380,4 +383,120 @@ a { color: inherit; }
   .form-grid { grid-template-columns: 1fr; }
   .field input, .field select { font-size: 16px; }
   .calories-big { font-size: 36px; }
+}
+
+/* ---------- Навигация: четыре кнопки-карточки ---------- */
+.app-nav { background: transparent; border-top: 0; padding: 0 2px; }
+.app-nav ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0; }
+.app-nav a {
+  flex-direction: column;
+  min-width: 0;
+  min-height: 52px;
+  padding: 6px 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 11px;
+  gap: 4px;
+}
+.app-nav a:hover { border-color: var(--muted); color: var(--text); }
+.app-nav a.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+@media (min-width: 768px) {
+  .app-nav a { flex-direction: row; min-height: 48px; font-size: 13px; gap: 8px; }
+}
+@media (max-width: 767px) {
+  .app-nav {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 10;
+  }
+}
+
+/* ---------- Форма добавления еды: вертикальные блоки ---------- */
+.stacked-form > label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 500; }
+.stacked-form input, .stacked-form select {
+  width: 100%; min-width: 0; height: 48px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-input); color: var(--text);
+  padding: 10px 12px; font-size: 16px;
+}
+.stacked-form input[type="search"] { margin-top: 6px; }
+.product-results {
+  max-height: 340px; overflow-y: auto; margin-top: 8px;
+  display: grid; gap: 8px;
+}
+.selected-product {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-top: 8px; padding: 12px;
+  border: 1px solid var(--accent); border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  font-size: 14px;
+}
+.selected-badge {
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 11px; font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------- Плотность и сетки (п.17-23 ТЗ) ---------- */
+.profile-grid, .stats-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.dash-top { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.profile-form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.norm-values { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 480px) {
+  .dashboard-macros { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 768px) {
+  .dash-top { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .dash-top .dashboard-card { margin-bottom: 0; }
+}
+@media (min-width: 1024px) {
+  .profile-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .norm-values { grid-template-columns: repeat(4, 1fr); }
+  .auth-card { padding: 20px; }
+  #app { padding-top: 16px; }
+  .dashboard-card, .chart-box, .auth-card { margin-bottom: 12px; }
+}
+.form-block label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
+.form-block input, .form-block select {
+  width: 100%; min-width: 0; height: 48px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-input); color: var(--text);
+  padding: 10px 12px; font-size: 14px;
+}
+.weight-inline { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 1024px) {
+  .weight-inline { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+}
+.table-toggle { margin-top: 8px; }
+
+.profile-form-grid > .alert { grid-column: 1 / -1; }
+
+/* ---------- Правки по ревью ---------- */
+/* Заголовок приёма пищи над своей линией, а не под чужой */
+.meal-type-title {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+/* Нет лишней верхней полосы у первого заголовка в карточке */
+.auth-card > .dashboard-meals-title:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+/* Воздух между контентом и нижней навигацией */
+@media (max-width: 767px) {
+  #app { padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
 }
