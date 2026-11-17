@@ -51,7 +51,9 @@ function mealList(entries, actions) {
   for (const entry of entries) {
     (groups[entry.meal] ??= []).push(entry);
   }
-  for (const [meal, items] of Object.entries(groups)) {
+  for (const meal of ["breakfast", "lunch", "dinner", "snack"]) {
+    const items = groups[meal];
+    if (!items) continue;
     const group = el("div");
     group.appendChild(el("h4", "meal-type-title", MEAL_NAMES[meal] ?? meal));
     const list = el("ul", "meal-items-list");

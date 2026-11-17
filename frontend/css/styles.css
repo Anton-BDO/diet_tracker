@@ -479,3 +479,19 @@ a { color: inherit; }
   .weight-inline { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 }
 .table-toggle { margin-top: 8px; }
+
+/* ---------- Правки по ревью ---------- */
+/* Заголовок приёма пищи над своей линией, а не под чужой */
+.meal-type-title {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+/* Нет лишней верхней полосы у первого заголовка в карточке */
+.auth-card > .dashboard-meals-title:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+/* Воздух между контентом и нижней навигацией */
+@media (max-width: 767px) {
+  #app { padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
+}

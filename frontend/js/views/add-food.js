@@ -124,6 +124,8 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
     selectedCard.hidden = true;
     form.append(searchLabel, search, searchHint, results, selectedCard);
 
+    let resultsCollapsed = false;
+
     function showSelected(product) {
       selectedCard.replaceChildren();
       if (!product) {
@@ -131,13 +133,24 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
         return;
       }
       selectedCard.hidden = false;
+      resultsCollapsed = true;
+      results.hidden = true;
       const badge = el("span", "selected-badge", "Выбрано");
       const name = el("strong", "", product.name);
       const nutrients = el(
         "span", "muted",
         `${product.kcal} ккал · Б ${product.protein} г · Ж ${product.fat} г · У ${product.carbs} г на 100 г`,
       );
-      selectedCard.append(badge, name, nutrients);
+      const change = el("button", "button-secondary", "Изменить продукт");
+      change.addEventListener("click", () => {
+        selected = null;
+        selectedCard.hidden = true;
+        results.hidden = false;
+        resultsCollapsed = false;
+        search.focus();
+        updatePreview();
+      });
+      selectedCard.append(badge, name, nutrients, change);
     }
 
     const renderResults = (products) => {
@@ -177,6 +190,8 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
         return;
       }
       searchHint.hidden = true;
+      results.hidden = false;
+      resultsCollapsed = false;
       results.replaceChildren();
       results.appendChild(el("li", "muted", "Ищем продукты…"));
       try {

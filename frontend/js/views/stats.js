@@ -75,6 +75,9 @@ export function renderStats(root) {
   globalThis.addEventListener("themechange", onThemeChange);
 
   async function loadStats() {
+    for (const node of [...caloriesBox.children]) {
+      if (node.tagName !== "H2") node.remove();
+    }
     caloriesBox.appendChild(el("p", "muted", "Загрузка…"));
     try {
       const stats = await api.caloriesStats({
