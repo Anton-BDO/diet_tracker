@@ -116,9 +116,13 @@ def test_seed_products_loads_default_seed_file():
 
     added, skipped = seed_products.seed_products(database)
 
-    assert (added, skipped) == (45, 0)
-    assert database.products.count_documents({"owner_id": None}) == 45
-    assert seed_products.seed_products(database) == (0, 45)
+    total = len(json.loads(
+        seed_products.PRODUCTS_FILE.read_text(encoding="utf-8")
+    ))
+    assert (added, skipped) == (total, 0)
+    assert total >= 250
+    assert database.products.count_documents({"owner_id": None}) == total
+    assert seed_products.seed_products(database) == (0, total)
 
 
 def test_main_uses_environment_settings_and_closes_client(monkeypatch):
@@ -147,7 +151,10 @@ def test_main_uses_environment_settings_and_closes_client(monkeypatch):
     seed_products.main()
 
     assert client.closed is True
-    assert database.products.count_documents({}) == 45
+    total = len(json.loads(
+        seed_products.PRODUCTS_FILE.read_text(encoding="utf-8")
+    ))
+    assert database.products.count_documents({}) == total
 
 
 def test_main_closes_client_when_seeding_fails(monkeypatch):

@@ -41,7 +41,7 @@ function mealList(entries, actions) {
   if (!entries.length) {
     const empty = el("div", "empty-state");
     empty.appendChild(el("p", "", "Пока ничего не добавлено"));
-    const cta = el("button", "button-primary", "Добавить еду");
+    const cta = el("button", "button-primary", "Добавить первую запись");
     cta.addEventListener("click", () => { location.hash = "/add-food"; });
     empty.appendChild(cta);
     container.appendChild(empty);
@@ -159,10 +159,6 @@ function renderContent(root, state, actions) {
 
   screen.appendChild(el("h2", "dashboard-meals-title", "Что съедено сегодня"));
   screen.appendChild(mealList(entries, actions));
-
-  const add = el("button", "button-primary dashboard-add-btn", "+ Добавить еду");
-  add.addEventListener("click", () => { location.hash = "/add-food"; });
-  screen.appendChild(add);
 
   screen.appendChild(renderNav("dashboard"));
   root.replaceChildren(screen);
