@@ -9,7 +9,7 @@ import math
 
 
 from scripts import seed_products
-from scripts.build_seed import DISH_WORDS
+from scripts.build_seed import DISH_NAMES
 
 MIN_TOTAL = 250
 MIN_DISHES = 60
@@ -34,9 +34,12 @@ def _items():
 def test_catalog_size_and_dish_count():
     items = _items()
     assert len(items) >= MIN_TOTAL
-    dishes = [item for item in items
-              if any(word in item["name"] for word in DISH_WORDS)]
+    dishes = [item for item in items if item["name"] in DISH_NAMES]
     assert len(dishes) >= MIN_DISHES
+    # Базовые продукты не считаются блюдами.
+    for name in ("Рис отварной", "Тунец консервированный в собственном соку",
+                 "Кальмар варёный", "Яйцо варёное"):
+        assert name not in DISH_NAMES, f"{name}: не блюдо"
 
 
 def test_no_duplicate_normalized_names():

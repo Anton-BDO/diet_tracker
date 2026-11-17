@@ -215,7 +215,7 @@ a { color: inherit; }
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
-  color: #06130b;
+  color: var(--on-accent);
   font-size: 14px;
   font-weight: 600;
 }
@@ -356,6 +356,9 @@ a { color: inherit; }
     grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
     gap: 32px;
   }
+  .auth-shell[data-mode="register"] {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 680px);
+  }
   .brand-panel { text-align: left; }
   .brand-panel ul { display: grid; }
 }
@@ -479,6 +482,8 @@ a { color: inherit; }
   .weight-inline { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 }
 .table-toggle { margin-top: 8px; }
+
+.profile-form-grid > .alert { grid-column: 1 / -1; }
 
 /* ---------- Правки по ревью ---------- */
 /* Заголовок приёма пищи над своей линией, а не под чужой */

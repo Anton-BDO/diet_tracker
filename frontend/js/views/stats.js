@@ -68,9 +68,10 @@ export function renderStats(root) {
   screen.appendChild(renderNav("stats"));
   root.replaceChildren(screen);
 
-  const redraws = [];
-  const onResize = () => redraws.forEach(redraw => redraw());
-  const onThemeChange = () => redraws.forEach(redraw => redraw());
+  let redrawCalories = () => {};
+  let redrawWeight = () => {};
+  const onResize = () => { redrawCalories(); redrawWeight(); };
+  const onThemeChange = () => { redrawCalories(); redrawWeight(); };
   globalThis.addEventListener("resize", onResize);
   globalThis.addEventListener("themechange", onThemeChange);
 
@@ -90,11 +91,10 @@ export function renderStats(root) {
       canvas.setAttribute("role", "img");
       canvas.setAttribute("aria-label", "Столбчатый график калорий по дням");
       caloriesBox.appendChild(canvas);
-      const redraw = () => drawCaloriesChart(canvas, {
+      redrawCalories = () => drawCaloriesChart(canvas, {
         days: stats.days, normKcal: stats.norm_kcal,
       });
-      redraws.push(redraw);
-      requestAnimationFrame(redraw);
+      requestAnimationFrame(redrawCalories);
       caloriesTableBox.replaceChildren();
       const caloriesToggle = el("button", "button-secondary table-toggle",
         caloriesTableOpen ? "Скрыть данные по дням" : "Показать данные по дням");
@@ -119,8 +119,12 @@ export function renderStats(root) {
   }
 
   async function loadWeight() {
+    for (const node of [...weightBox.children]) {
+      if (node.tagName !== "H2") node.remove();
+    }
     try {
       const points = await api.weightHistory();
+      redrawWeight = () => {};
       if (!points.length) {
         weightBox.appendChild(el("p", "muted", "Замеров веса пока нет"));
         return;
@@ -129,9 +133,8 @@ export function renderStats(root) {
       canvas.setAttribute("role", "img");
       canvas.setAttribute("aria-label", "Линейный график веса");
       weightBox.appendChild(canvas);
-      const redraw = () => drawWeightChart(canvas, points);
-      redraws.push(redraw);
-      requestAnimationFrame(redraw);
+      redrawWeight = () => drawWeightChart(canvas, points);
+      requestAnimationFrame(redrawWeight);
       weightTableBox.replaceChildren();
       const weightToggle = el("button", "button-secondary table-toggle",
         weightTableOpen ? "Скрыть историю" : "Показать всю историю");

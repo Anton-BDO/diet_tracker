@@ -235,6 +235,8 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
     ]) {
       const fieldLabel = el("label", "", label);
       const input = el("input");
+      input.id = `custom-${name}`;
+      fieldLabel.htmlFor = input.id;
       input.name = name;
       input.type = step ? "number" : "text";
       if (step) {
@@ -251,12 +253,23 @@ export function renderAddFood(root, { store, entryId = null, onDone }) {
       errorBox.hidden = true;
       customSubmit.disabled = true;
       try {
+        const raw = {
+          name: customFields.name.value.trim(),
+          kcal: customFields.kcal.value.trim(),
+          protein: customFields.protein.value.trim(),
+          fat: customFields.fat.value.trim(),
+          carbs: customFields.carbs.value.trim(),
+        };
+        const emptyField = Object.keys(raw).find(key => !raw[key]);
+        if (emptyField) {
+          throw new Error("Заполните все поля продукта");
+        }
         const body = {
-          name: customFields.name.value,
-          kcal: Number(customFields.kcal.value),
-          protein: Number(customFields.protein.value),
-          fat: Number(customFields.fat.value),
-          carbs: Number(customFields.carbs.value),
+          name: raw.name,
+          kcal: Number(raw.kcal),
+          protein: Number(raw.protein),
+          fat: Number(raw.fat),
+          carbs: Number(raw.carbs),
         };
         selected = await api.createProduct(body);
         customForm.hidden = true;
